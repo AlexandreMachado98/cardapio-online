@@ -1,0 +1,122 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  icon      String?   // Emoji or Lucide icon name
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  imageUrl    String
+  badge       String?     // e.g. "Mais Pedido", "Novidade", "Promoção"
+  available   Boolean     @default(true)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  meatPoints  String?     // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
+  hasFarofa   Boolean     @default(true)
+  hasVinagrete Boolean    @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+model Customer {
+  id        String     @id @default(cuid())
+  name      String
+  phone     String     @unique
+  email     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  addresses Address[]
+  orders    Order[]
+}
+
+model Address {
+  id           String    @id @default(cuid())
+  customerId   String
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String    @default("Sua Cidade")
+  state        String    @default("SP")
+  cep          String?
+  lat          Float?
+  lng          Float?
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+}
+
+model DeliveryZone {
+  id               String   @id @default(cuid())
+  neighborhood     String   @unique
+  fee              Float
+  estimatedMinutes Int      @default(35)
+  active           Boolean  @default(true)
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    Int         @unique
+  customerId     String?
+  customer       Customer?   @relation(fields: [customerId], references: [id])
+  customerName   String
+  customerPhone  String
+  deliveryType   String      @default("DELIVERY") // "DELIVERY" | "PICKUP"
+  addressText    String?     // Formatted full address
+  neighborhood   String?
+  deliveryFee    Float       @default(0)
+  subtotal       Float
+  total          Float
+  paymentMethod  String      // "PIX" | "CARD" | "CASH"
+  changeFor      Float?
+  status         String      @default("PENDING") // "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
+  notes          String?
+  
+  // Real-time Courier Tracking
+  courierName    String?     @default("Carlos Motoboy")
+  courierPhone   String?     @default("11999998888")
+  courierLat     Float?
+  courierLng     Float?
+  targetLat      Float?
+  targetLng      Float?
+  
+  whatsappSent   Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  meatPoint   String?  // e.g. "Ao ponto"
+  farofa      Boolean  @default(false)
+  vinagrete   Boolean  @default(false)
+  notes       String?
+}
