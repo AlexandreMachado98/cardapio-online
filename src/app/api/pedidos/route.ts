@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { generateOrderConfirmationWhatsAppMessage, createWhatsAppLink } from '@/lib/whatsapp';
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +54,11 @@ export async function POST(request: Request) {
     } = body;
 
     const cleanPhone = customerPhone.replace(/\D/g, '');
+
+    // Buscar configurações da loja para nome e entregador padrão
+    const settings = await prisma.storeSettings.findUnique({
+      where: { id: 'default' },
+    });
 
     // 1. Criar ou atualizar cliente
     let customer = await prisma.customer.findUnique({
@@ -123,8 +129,10 @@ export async function POST(request: Request) {
         changeFor: changeFor ? Number(changeFor) : null,
         notes: notes || null,
         status: 'PENDING',
-        courierName: 'Carlos Motoboy',
-        courierPhone: '11999998888',
+        courierName: settings?.defaultCourierName || 'Carlos Motoboy',
+        courierPhone: settings?.defaultCourierPhone || '11999998888',
+        courierVehicle: settings?.defaultCourierVehicle || 'Moto Honda Fan 160',
+        courierPlate: settings?.defaultCourierPlate || '',
         courierLat: -23.5505, // Ponto inicial (Restaurante)
         courierLng: -46.6333,
         targetLat: targetLat,
@@ -149,7 +157,37 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(order, { status: 201 });
+    // 5. Gerar mensagem e link do WhatsApp para envio imediato
+    const origin = request.headers.get('origin') || 'http://localhost:3000';
+    const trackingUrl = `${origin}/pedido/${order.orderNumber}`;
+
+    const waMsg = generateOrderConfirmationWhatsAppMessage({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      items: order.items,
+      deliveryType: order.deliveryType,
+      addressText: order.addressText,
+      deliveryFee: order.deliveryFee,
+      subtotal: order.subtotal,
+      total: order.total,
+      paymentMethod: order.paymentMethod,
+      changeFor: order.changeFor,
+      trackingUrl,
+      storeName: settings?.name || 'Cardápio Online',
+      notes: order.notes,
+    });
+
+    const whatsappLink = createWhatsAppLink(cleanPhone, waMsg);
+
+    return NextResponse.json(
+      {
+        ...order,
+        whatsappLink,
+        trackingUrl,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Erro ao criar pedido:', error);
     return NextResponse.json({ error: 'Erro ao processar pedido' }, { status: 500 });

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { OrderData } from '@/types';
 import { getStatusDetails, formatBRL, formatPhone } from '@/lib/utils';
-import { createWhatsAppLink } from '@/lib/whatsapp';
+import { createWhatsAppLink, generateOrderConfirmationWhatsAppMessage } from '@/lib/whatsapp';
 import {
   Clock,
   CheckCircle2,
@@ -196,6 +196,56 @@ export default function OrderStatusPage() {
             })}
           </div>
         </div>
+
+        {/* WhatsApp Notification & Confirmation Card */}
+        {order && (() => {
+          const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+          const trackingUrl = `${origin}/pedido/${order.orderNumber}`;
+          const waConfirmationMsg = generateOrderConfirmationWhatsAppMessage({
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            customerPhone: order.customerPhone,
+            items: order.items,
+            deliveryType: order.deliveryType,
+            addressText: order.addressText,
+            deliveryFee: order.deliveryFee,
+            subtotal: order.subtotal,
+            total: order.total,
+            paymentMethod: order.paymentMethod,
+            changeFor: order.changeFor,
+            trackingUrl,
+            notes: order.notes,
+          });
+          const waConfirmationLink = createWhatsAppLink(order.customerPhone, waConfirmationMsg);
+
+          return (
+            <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3 text-center sm:text-left">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-950/50 flex-shrink-0">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm">
+                    💬 Comprovante & Notificação do WhatsApp
+                  </h4>
+                  <p className="text-xs text-emerald-200/80">
+                    O link de rastreio e resumo do pedido foram formatados para envio no seu WhatsApp.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={waConfirmationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-black px-5 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 hover:scale-105 transition-all flex-shrink-0"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Abrir no WhatsApp</span>
+              </a>
+            </div>
+          );
+        })()}
 
         {/* Live GPS Tracker Highlight Button (If Out for Delivery) */}
         {isOutForDelivery && (

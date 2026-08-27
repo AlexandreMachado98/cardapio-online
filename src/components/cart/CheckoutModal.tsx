@@ -123,6 +123,15 @@ export default function CheckoutModal({ onClose }: void | any) {
         // ignore
       }
 
+      // Disparo automático da confirmação no WhatsApp com o link de rastreio
+      if (createdOrder.whatsappLink) {
+        try {
+          window.open(createdOrder.whatsappLink, '_blank');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       clearCart();
       setIsCartOpen(false);
       onClose();
