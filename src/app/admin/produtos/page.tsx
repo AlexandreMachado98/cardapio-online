@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Product, Category, ProductComplement } from '@/types';
 import { formatBRL } from '@/lib/utils';
@@ -20,6 +20,9 @@ import {
   Flame,
   Percent,
   PlusCircle,
+  Upload,
+  Image as ImageIcon,
+  Camera,
 } from 'lucide-react';
 
 export default function AdminProdutosPage() {
@@ -53,6 +56,8 @@ export default function AdminProdutosPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
 
+  const productFileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     fetchProductsAndCategories();
   }, []);
@@ -73,6 +78,45 @@ export default function AdminProdutosPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Image Upload Handler (Convert picked file from phone gallery/camera to Base64)
+  const handleProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800; // Optimal for fast product loading
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setImageUrl(compressedDataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleOpenCreate = () => {
@@ -135,7 +179,6 @@ export default function AdminProdutosPage() {
         setComplementsList([]);
       }
     } else {
-      // Fallback from legacy boolean flags
       const initialComps: ProductComplement[] = [];
       if (prod.hasFarofa) initialComps.push({ name: 'Farofa Crocante da Casa', price: 0 });
       if (prod.hasVinagrete) initialComps.push({ name: 'Vinagrete Especial com Azeite', price: 0 });
@@ -220,7 +263,7 @@ export default function AdminProdutosPage() {
         description,
         price: Number(price),
         originalPrice: originalPrice ? Number(originalPrice) : null,
-        imageUrl,
+        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
         badge: badge.trim() || null,
         available,
         categoryId,
@@ -297,10 +340,10 @@ export default function AdminProdutosPage() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-2">
         <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
           <ShoppingBag className="w-6 h-6 text-orange-500" />
-          Gerenciamento de Produtos, Promoções & Complementos
+          Gerenciamento de Produtos, Fotos Reais & Promoções
         </h1>
         <p className="text-xs text-zinc-400">
-          Cadastre novos espetinhos, configure complementos e adicionais (farofa, vinagrete, molhos), crie descontos e oculte itens esgotados.
+          Cadastre novos espetinhos com fotos reais da sua galeria, configure complementos e adicionais, crie descontos e controle a visibilidade.
         </p>
       </div>
 
@@ -383,7 +426,7 @@ export default function AdminProdutosPage() {
                   <img
                     src={prod.imageUrl}
                     alt={prod.name}
-                    className="w-20 h-20 rounded-2xl object-cover bg-zinc-950 flex-shrink-0"
+                    className="w-20 h-20 rounded-2xl object-cover bg-zinc-950 flex-shrink-0 border border-zinc-800"
                   />
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -402,7 +445,7 @@ export default function AdminProdutosPage() {
 
                     {complementsCount > 0 && (
                       <p className="text-[10px] text-orange-400 font-medium">
-                        ✓ {complementsCount} complemento(s) configurado(s)
+                        ✓ {complementsCount} complemento(s)
                       </p>
                     )}
                   </div>
@@ -426,7 +469,7 @@ export default function AdminProdutosPage() {
                         prod.available ? 'text-emerald-400' : 'text-red-400'
                       }`}
                     >
-                      {prod.available ? '● Disponível para compra' : '○ Esgotado / Oculto'}
+                      {prod.available ? '● Disponível' : '○ Oculto'}
                     </span>
                   </div>
 
@@ -447,7 +490,7 @@ export default function AdminProdutosPage() {
                     <button
                       onClick={() => handleOpenEdit(prod)}
                       className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white transition-all"
-                      title="Editar Produto e Complementos"
+                      title="Editar Produto e Foto"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -470,7 +513,7 @@ export default function AdminProdutosPage() {
       {/* Modal Criar/Editar Produto */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl p-6 space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h3 className="font-bold text-white text-base">
                 {editingProduct ? 'Editar Produto' : 'Cadastrar Novo Produto'}
@@ -481,6 +524,64 @@ export default function AdminProdutosPage() {
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
+              {/* 📸 SELEÇÃO DE FOTO REAL DO PRODUTO (GALERIA OU LINK) */}
+              <div className="space-y-2 p-4 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <label className="block text-xs font-bold uppercase tracking-wider text-orange-400">
+                  Foto Real do Produto / Espeto
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  {/* Image Preview */}
+                  <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-700 flex-shrink-0 flex items-center justify-center shadow-inner">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt="Preview do produto"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Camera className="w-8 h-8 text-zinc-600" />
+                    )}
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="space-y-2 flex-1 text-center sm:text-left">
+                    <input
+                      type="file"
+                      ref={productFileInputRef}
+                      onChange={handleProductImageChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => productFileInputRef.current?.click()}
+                        className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center gap-1.5 shadow transition-all active:scale-95"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Escolher Foto da Galeria / Câmera</span>
+                      </button>
+
+                      {imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setImageUrl('')}
+                          className="text-xs text-zinc-400 hover:text-red-400 bg-zinc-900 border border-zinc-700 px-2.5 py-2 rounded-xl transition-colors"
+                        >
+                          Remover Foto
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 leading-tight">
+                      Dica: Tire uma foto bem iluminada do espetinho ou porção no seu balcão para chamar a atenção dos clientes!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">
                   Nome do Produto *
@@ -558,32 +659,17 @@ export default function AdminProdutosPage() {
               </div>
 
               {/* Selo / Badge Promocional */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    Selo / Destaque Promocional
-                  </label>
-                  <input
-                    type="text"
-                    value={badge}
-                    onChange={(e) => setBadge(e.target.value)}
-                    placeholder="Ex: 30% OFF, Oferta, Destaque"
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
-                    URL da Foto do Produto
-                  </label>
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  Selo / Destaque Promocional (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={badge}
+                  onChange={(e) => setBadge(e.target.value)}
+                  placeholder="Ex: 30% OFF, Oferta, Mais Pedido, Especial do Chef"
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                />
               </div>
 
               {/* Ponto da Carne */}
@@ -657,27 +743,20 @@ export default function AdminProdutosPage() {
                   >
                     <Plus className="w-3 h-3" /> Mandioca
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickAddComplement('Chimichurri Artesanal', 0)}
-                    className="text-[11px] bg-zinc-800 hover:bg-orange-600/30 text-zinc-300 hover:text-orange-400 border border-zinc-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Chimichurri
-                  </button>
                 </div>
 
                 {/* List of active complements with delete button */}
-                {complementsList.length > 0 ? (
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {complementsList.length > 0 && (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
                     {complementsList.map((comp, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 text-xs"
+                        className="flex items-center justify-between p-2 bg-zinc-950 rounded-xl border border-zinc-800 text-xs"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-zinc-200">{comp.name}</span>
                           <span className="text-[10px] text-zinc-500">
-                            {comp.price && comp.price > 0 ? `+ ${formatBRL(comp.price)}` : '(Grátis / Cortesia)'}
+                            {comp.price && comp.price > 0 ? `+ ${formatBRL(comp.price)}` : '(Grátis)'}
                           </span>
                         </div>
 
@@ -691,10 +770,6 @@ export default function AdminProdutosPage() {
                         </button>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center p-3 bg-zinc-950/60 rounded-xl border border-zinc-800 text-xs text-zinc-500">
-                    Nenhum complemento ativo para este produto (o cliente não verá opções extras).
                   </div>
                 )}
 
@@ -713,7 +788,7 @@ export default function AdminProdutosPage() {
                     value={newCompPrice}
                     onChange={(e) => setNewCompPrice(e.target.value)}
                     placeholder="0.00"
-                    title="Preço extra (deixe 0 para gratuito)"
+                    title="Preço extra"
                     className="w-20 bg-zinc-950 border border-zinc-700 rounded-xl px-2 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500 text-center"
                   />
                   <button
@@ -730,7 +805,7 @@ export default function AdminProdutosPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95"
               >
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Salvando Produto...' : 'Salvar Produto no Cardápio'}</span>
