@@ -1,6 +1,31 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Helper to geocode address server side if coordinates not provided
+async function geocodeAddressServer(addressText: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      addressText + ', Brasil'
+    )}&limit=1`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'CardapioDeliveryApp/2.0 (settings-geocoding)',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        };
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
 export async function GET() {
   try {
     let settings = await prisma.storeSettings.findUnique({
@@ -64,6 +89,18 @@ export async function POST(request: Request) {
       minOrderValue,
     } = body;
 
+    let finalLat = lat !== undefined && lat !== null && lat !== '' ? Number(lat) : null;
+    let finalLng = lng !== undefined && lng !== null && lng !== '' ? Number(lng) : null;
+
+    // If coordinates not passed but address is provided, geocode automatically
+    if ((!finalLat || !finalLng) && address && address.trim()) {
+      const geo = await geocodeAddressServer(address.trim());
+      if (geo) {
+        finalLat = geo.lat;
+        finalLng = geo.lng;
+      }
+    }
+
     const settings = await prisma.storeSettings.upsert({
       where: { id: 'default' },
       update: {
@@ -83,8 +120,8 @@ export async function POST(request: Request) {
         defaultCourierPlate: defaultCourierPlate !== undefined ? defaultCourierPlate : undefined,
         phone,
         address,
-        lat: lat !== undefined ? Number(lat) : undefined,
-        lng: lng !== undefined ? Number(lng) : undefined,
+        lat: finalLat !== null ? finalLat : undefined,
+        lng: finalLng !== null ? finalLng : undefined,
         googleMapsApiKey: googleMapsApiKey !== undefined ? googleMapsApiKey : undefined,
         pixKey,
         minOrderValue: Number(minOrderValue) || 0,
@@ -105,8 +142,9 @@ export async function POST(request: Request) {
         defaultCourierPlate: defaultCourierPlate || '',
         phone: phone || '',
         address: address || '',
-        lat: lat !== undefined ? Number(lat) : -23.5505,
-        lng: lng !== undefined ? Number(lng) : -46.6333,
+        lat: finalLat,
+        lng: finalLng,
+        googleMapsApiKey: googleMapsApiKey || '',
         pixKey: pixKey || phone || '',
         minOrderValue: Number(minOrderValue) || 0,
       },

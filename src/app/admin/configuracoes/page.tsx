@@ -39,8 +39,8 @@ export default function StoreSettingsPage() {
   const [isOpen, setIsOpen] = useState(true);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [lat, setLat] = useState<string>('-23.5505');
-  const [lng, setLng] = useState<string>('-46.6333');
+  const [lat, setLat] = useState<string>('');
+  const [lng, setLng] = useState<string>('');
   const [pixKey, setPixKey] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('0');
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
@@ -66,8 +66,8 @@ export default function StoreSettingsPage() {
         setIsOpen(data.isOpen ?? true);
         setPhone(data.phone || '');
         setAddress(data.address || '');
-        setLat(String(data.lat || -23.5505));
-        setLng(String(data.lng || -46.6333));
+        setLat(data.lat !== null && data.lat !== undefined ? String(data.lat) : '');
+        setLng(data.lng !== null && data.lng !== undefined ? String(data.lng) : '');
         setGoogleMapsApiKey(data.googleMapsApiKey || '');
         setPixKey(data.pixKey || '');
         setMinOrderValue(String(data.minOrderValue || 0));

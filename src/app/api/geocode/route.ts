@@ -11,40 +11,63 @@ export async function GET(request: Request) {
 
     const cleanAddress = address.trim();
 
-    // Queries to attempt in order of specificity
-    const attempts = [
+    // 1. First Attempt: Nominatim OpenStreetMap with full structured address
+    const nominatimQueries = [
       cleanAddress,
-      // Remove apartment/complement notes if any
       cleanAddress.replace(/(apto|apartamento|bloco|casa|fundos|sobrado|lote|qd|quadra)[\s\w\d,-]*/gi, '').trim(),
     ];
 
-    for (const query of attempts) {
-      if (!query) continue;
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        query + ', Brasil'
-      )}&limit=1&addressdetails=1`;
+    for (const q of nominatimQueries) {
+      if (!q) continue;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          q + ', Brasil'
+        )}&limit=1&addressdetails=1`;
 
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'CardapioOnlineDelivery/1.0 (delivery-app-geocoding)',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-      });
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'CardapioDeliveryApp/2.0 (brazilian-delivery-geocoding)',
+            'Accept-Language': 'pt-BR,pt;q=0.9',
+          },
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return NextResponse.json({
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
-            displayName: data[0].display_name,
-          });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return NextResponse.json({
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon),
+              displayName: data[0].display_name,
+            });
+          }
         }
+      } catch (e) {
+        // continue to next provider
       }
     }
 
+    // 2. Second Attempt: Photon Komoot OpenStreetMap Geocoder (high street-level accuracy)
+    try {
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanAddress)}&limit=1&lang=pt`;
+      const photonRes = await fetch(photonUrl);
+      if (photonRes.ok) {
+        const photonData = await photonRes.json();
+        if (photonData.features && photonData.features.length > 0) {
+          const coords = photonData.features[0].geometry.coordinates; // [lng, lat]
+          const props = photonData.features[0].properties;
+          return NextResponse.json({
+            lat: coords[1],
+            lng: coords[0],
+            displayName: `${props.name || ''}, ${props.city || props.state || 'Brasil'}`,
+          });
+        }
+      }
+    } catch (e) {
+      // continue
+    }
+
     return NextResponse.json(
-      { error: 'Endereço não localizado com precisão no mapa' },
+      { error: 'Endereço não localizado com precisão. Tente adicionar a Cidade e Estado.' },
       { status: 404 }
     );
   } catch (error) {

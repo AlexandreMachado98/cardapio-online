@@ -82,37 +82,48 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
     async function initLocations() {
       try {
         const configRes = await fetch('/api/config');
-        let rLat = -23.5505;
-        let rLng = -46.6333;
+        let rLat: number | null = null;
+        let rLng: number | null = null;
         let storeAddr = 'Cozinha';
         let apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
         if (configRes.ok) {
           const cfg = await configRes.json();
-          if (cfg.lat && cfg.lng) {
+          storeAddr = cfg.address || 'Cozinha';
+
+          // If store has valid non-SP coords, use them
+          const isCfgDefaultSP = cfg.lat && cfg.lng && Math.abs(cfg.lat - (-23.5505)) < 0.001 && Math.abs(cfg.lng - (-46.6333)) < 0.001;
+          if (cfg.lat && cfg.lng && !isCfgDefaultSP) {
             rLat = Number(cfg.lat);
             rLng = Number(cfg.lng);
-            storeAddr = cfg.address || 'Cozinha';
+          } else if (cfg.address && cfg.address.trim()) {
+            // Geocode store address
+            try {
+              const storeGeo = await fetch(`/api/geocode?address=${encodeURIComponent(cfg.address.trim())}`);
+              if (storeGeo.ok) {
+                const sData = await storeGeo.json();
+                if (sData.lat && sData.lng) {
+                  rLat = sData.lat;
+                  rLng = sData.lng;
+                }
+              }
+            } catch (e) {}
           }
+
           if (cfg.googleMapsApiKey) {
             apiKey = cfg.googleMapsApiKey;
           }
         }
 
-        if (isCancelled) return;
-        setRestaurantCoords([rLat, rLng]);
-        setStoreAddress(storeAddr);
-        setGoogleMapsApiKey(apiKey);
-        if (apiKey && apiKey.trim().length > 10) {
-          setMapEngine('GOOGLE');
-        }
-
         // Determine Target (Customer) Coordinates
-        let tLat = order.targetLat;
-        let tLng = order.targetLng;
+        let tLat: number | null = null;
+        let tLng: number | null = null;
 
-        const isDefaultSP = tLat && tLng && Math.abs(tLat - (-23.561684)) < 0.001 && Math.abs(tLng - (-46.655981)) < 0.001;
-        if ((!tLat || !tLng || isDefaultSP) && order.addressText && order.addressText !== 'Retirada no Balcão') {
+        const isOrderTargetSP = order.targetLat && order.targetLng && Math.abs(order.targetLat - (-23.561684)) < 0.001 && Math.abs(order.targetLng - (-46.655981)) < 0.001;
+        if (order.targetLat && order.targetLng && !isOrderTargetSP) {
+          tLat = order.targetLat;
+          tLng = order.targetLng;
+        } else if (order.addressText && order.addressText !== 'Retirada no Balcão') {
           try {
             const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(order.addressText)}`);
             if (geoRes.ok) {
@@ -125,12 +136,32 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
           } catch (e) {}
         }
 
-        if (!tLat || !tLng || isDefaultSP) {
+        // If store location was not found, but customer was found, place store near customer
+        if (!rLat || !rLng) {
+          if (tLat && tLng) {
+            rLat = tLat - 0.008;
+            rLng = tLng - 0.008;
+          } else {
+            // Default anchor if no address exists at all
+            rLat = -23.5505;
+            rLng = -46.6333;
+          }
+        }
+
+        // If customer was not found, place customer near store
+        if (!tLat || !tLng) {
           tLat = rLat + 0.008;
           tLng = rLng + 0.008;
         }
 
         if (isCancelled) return;
+        setRestaurantCoords([rLat, rLng]);
+        setStoreAddress(storeAddr);
+        setGoogleMapsApiKey(apiKey);
+        if (apiKey && apiKey.trim().length > 10) {
+          setMapEngine('GOOGLE');
+        }
+
         setTargetCoords([tLat, tLng]);
 
         // Courier position
