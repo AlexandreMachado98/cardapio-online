@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Flame, ShoppingBag, User } from 'lucide-react';
 import { StoreSettings } from '@/types';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { totalItemCount, setIsCartOpen, total } = useCart();
   const { customer, isAuthenticated } = useAuth();
   const [storeConfig, setStoreConfig] = useState<StoreSettings | null>(null);
@@ -18,6 +20,11 @@ export default function Navbar() {
       .then((data) => setStoreConfig(data))
       .catch(() => {});
   }, []);
+
+  // HIDE COMPLETELY IN ADMIN AND COURIER SCREENS (Exclusive admin bar is used)
+  if (pathname.startsWith('/admin') || pathname.startsWith('/entregador')) {
+    return null;
+  }
 
   const isOpen = storeConfig?.isOpen ?? true;
   const logoUrl = storeConfig?.logoUrl;
