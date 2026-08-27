@@ -19,7 +19,9 @@ import {
   EyeOff,
   Power,
   Flame,
+  ShieldCheck,
 } from 'lucide-react';
+import { StoreSettings } from '@/types';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,7 +35,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Quick Open/Closed Status State
+  // Store Settings & Status State
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [isOpen, setIsOpen] = useState(true);
   const [togglingStatus, setTogglingStatus] = useState(false);
 
@@ -52,19 +55,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchStoreStatus();
+      fetchStoreSettings();
     }
   }, [isAuthenticated]);
 
-  const fetchStoreStatus = async () => {
+  const fetchStoreSettings = async () => {
     try {
       const res = await fetch('/api/config');
       if (res.ok) {
         const data = await res.json();
+        setStoreSettings(data);
         setIsOpen(data.isOpen ?? true);
       }
     } catch (e) {
-      console.error('Erro ao buscar status', e);
+      console.error('Erro ao buscar configurações', e);
     }
   };
 
@@ -102,6 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (res.ok) {
         setIsAuthenticated(true);
         localStorage.setItem('saborespeto_admin_auth', 'true');
+        fetchStoreSettings();
       } else {
         const data = await res.json();
         setError(data.error || 'Usuário ou senha incorretos.');
@@ -230,13 +235,122 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/configuracoes', label: 'Perfil da Cozinha', icon: Settings },
   ];
 
+  const storeName = storeSettings?.name || 'Cardápio Online';
+  const subName = storeSettings?.subName || '';
+  const logoUrl = storeSettings?.logoUrl;
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-12">
-      {/* Dedicated Admin Header with Quick Status Switcher */}
-      <div className="bg-zinc-900/90 border-b border-zinc-800 sticky top-16 z-30 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-16">
+      {/* 🌟 CABEÇALHO PRINCIPAL DO ADMIN (LOGO CIRCULAR + NOME + PERFIL ADMIN + STATUS) */}
+      <header className="sticky top-0 z-40 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800 shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          {/* Logo Circular & Informações da Cozinha */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                  isOpen
+                    ? 'border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                    : 'border-2 border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]'
+                }`}
+              >
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo da Cozinha"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white">
+                    <Flame className="w-6 h-6 animate-pulse" />
+                  </div>
+                )}
+              </div>
+
+              {/* Status Beacon */}
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-zinc-900 ${
+                  isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                }`}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-sm sm:text-base tracking-tight text-white uppercase">
+                  {storeName} {subName ? `- ${subName}` : ''}
+                </span>
+                <span className="text-[10px] uppercase font-black bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-0.2 rounded-full">
+                  Painel da Cozinha
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 hidden sm:block">
+                Gestão de Pedidos, Cardápio & Delivery
+              </p>
+            </div>
+          </div>
+
+          {/* Lado Direito: Status Aberto/Fechado + Perfil do Admin + Sair */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Botão de Status Aberto / Fechado em 1 Clique */}
+            <button
+              onClick={handleToggleStoreStatus}
+              disabled={togglingStatus}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 border ${
+                isOpen
+                  ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/40'
+                  : 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/40'
+              }`}
+              title="Clique para alternar o status aberto/fechado da loja"
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isOpen ? 'bg-emerald-400 animate-ping' : 'bg-red-500'
+                }`}
+              />
+              <span className="hidden sm:inline">{isOpen ? 'Loja Aberta' : 'Loja Fechada'}</span>
+              <Power className="w-3.5 h-3.5 opacity-80" />
+            </button>
+
+            {/* Perfil do Administrador */}
+            <div className="flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/80 px-3 py-1.5 rounded-xl text-xs">
+              <div className="w-6 h-6 rounded-lg bg-orange-600/20 text-orange-400 flex items-center justify-center font-bold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <div className="hidden md:block text-left">
+                <div className="font-bold text-zinc-200 text-[11px] leading-tight">Admin Principal</div>
+                <div className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online
+                </div>
+              </div>
+            </div>
+
+            {/* Ver Cardápio */}
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700/60 transition-colors"
+              title="Ver Cardápio como Cliente"
+            >
+              <span className="hidden sm:inline">Cardápio</span>
+              <ExternalLink className="w-3.5 h-3.5 text-orange-400" />
+            </Link>
+
+            {/* Botão Sair */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-red-400 bg-zinc-800/60 hover:bg-zinc-800 p-2 sm:px-3 sm:py-1.5 rounded-xl border border-zinc-700/60 transition-colors"
+              title="Sair do Painel"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sair</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 📑 SUB-BARRA DE ABAS DE NAVEGAÇÃO DO ADMIN */}
+        <div className="bg-zinc-950/80 border-t border-zinc-800/80 px-4 py-1.5">
+          <div className="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {navLinks.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -244,10 +358,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     isActive
                       ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -256,52 +370,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               );
             })}
           </div>
-
-          {/* Quick Open/Closed Status Switch & Actions */}
-          <div className="flex items-center justify-between sm:justify-end gap-2.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800">
-            {/* 🔴/🟢 BOTÃO DE FÁCIL ACESSO: ABERTO / FECHADO */}
-            <button
-              onClick={handleToggleStoreStatus}
-              disabled={togglingStatus}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-md transition-all active:scale-95 border ${
-                isOpen
-                  ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/40'
-                  : 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/40'
-              }`}
-              title="Clique para alternar o status da loja para os clientes"
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'
-                }`}
-              />
-              <span>{isOpen ? 'Loja Aberta' : 'Loja Fechada'}</span>
-              <Power className="w-3.5 h-3.5 ml-0.5 opacity-75" />
-            </button>
-
-            <Link
-              href="/"
-              target="_blank"
-              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
-              title="Abrir visão do cliente"
-            >
-              <span className="hidden md:inline">Ver Cardápio</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-red-400 bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
-              title="Sair do Painel"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sair</span>
-            </button>
-          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="py-2">{children}</div>
+      {/* Conteúdo da Página */}
+      <main className="py-2">{children}</main>
     </div>
   );
 }
