@@ -27,6 +27,7 @@ export interface StoreSettings {
   address: string;
   lat?: number | null;
   lng?: number | null;
+  googleMapsApiKey?: string | null;
   pixKey?: string | null;
   minOrderValue: number;
 }

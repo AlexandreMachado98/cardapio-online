@@ -36,6 +36,9 @@ model StoreSettings {
   lat                   Float?   @default(-23.5505)
   lng                   Float?   @default(-46.6333)
   
+  // Google Maps API Key
+  googleMapsApiKey      String?  @default("")
+  
   pixKey                String?  @default("")
   minOrderValue         Float    @default(0)
   updatedAt             DateTime @updatedAt

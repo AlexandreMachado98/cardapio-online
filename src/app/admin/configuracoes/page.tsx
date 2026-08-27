@@ -43,6 +43,7 @@ export default function StoreSettingsPage() {
   const [lng, setLng] = useState<string>('-46.6333');
   const [pixKey, setPixKey] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('0');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +68,7 @@ export default function StoreSettingsPage() {
         setAddress(data.address || '');
         setLat(String(data.lat || -23.5505));
         setLng(String(data.lng || -46.6333));
+        setGoogleMapsApiKey(data.googleMapsApiKey || '');
         setPixKey(data.pixKey || '');
         setMinOrderValue(String(data.minOrderValue || 0));
       }
@@ -192,6 +194,7 @@ export default function StoreSettingsPage() {
           address,
           lat: Number(lat) || -23.5505,
           lng: Number(lng) || -46.6333,
+          googleMapsApiKey: googleMapsApiKey.trim(),
           pixKey,
           minOrderValue: Number(minOrderValue) || 0,
         }),
@@ -520,6 +523,35 @@ export default function StoreSettingsPage() {
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
             </div>
+          </div>
+        </div>
+
+        {/* 🗺️ INTEGRAÇÃO COM GOOGLE MAPS PLATFORM */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+              <Navigation className="w-4 h-4" />
+              Integração com Google Maps API (Opcional)
+            </h3>
+            <span className="text-[11px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full font-bold">
+              Google Maps Oficial
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1">
+              Chave de API do Google Maps (Google Maps JavaScript API)
+            </label>
+            <input
+              type="password"
+              value={googleMapsApiKey}
+              onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+              placeholder="Ex: AIzaSyD..."
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 font-mono focus:outline-none focus:border-orange-500"
+            />
+            <p className="text-[11px] text-zinc-400 mt-1.5 leading-relaxed">
+              Cole sua chave da API do Google Maps para exibir o mapa oficial do Google no rastreamento ao vivo do cliente. Se deixar em branco, o sistema continuará usando o mapa padrão OpenStreetMap automaticamente!
+            </p>
           </div>
         </div>
 

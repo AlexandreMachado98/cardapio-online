@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       address,
       lat,
       lng,
+      googleMapsApiKey,
       pixKey,
       minOrderValue,
     } = body;
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
         address,
         lat: lat !== undefined ? Number(lat) : undefined,
         lng: lng !== undefined ? Number(lng) : undefined,
+        googleMapsApiKey: googleMapsApiKey !== undefined ? googleMapsApiKey : undefined,
         pixKey,
         minOrderValue: Number(minOrderValue) || 0,
       },
