@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   LayoutGrid,
   Truck,
+  Bike,
   Settings,
   ExternalLink,
   ClipboardList,
@@ -232,6 +233,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/produtos', label: 'Produtos & Promoções', icon: ShoppingBag },
     { href: '/admin/categorias', label: 'Categorias', icon: LayoutGrid },
     { href: '/admin/taxas', label: 'Taxas de Frete', icon: Truck },
+    { href: '/admin/entregadores', label: 'Entregadores', icon: Bike },
     { href: '/admin/configuracoes', label: 'Perfil da Cozinha', icon: Settings },
   ];
 

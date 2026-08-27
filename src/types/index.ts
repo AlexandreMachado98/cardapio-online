@@ -12,7 +12,17 @@ export interface StoreSettings {
   bannerUrl?: string | null;
   announcement?: string | null;
   isOpen: boolean;
+  adminUser?: string;
+  adminEmail?: string;
+  adminPassword?: string;
   adminPin: string;
+  
+  // Entregador Padrão
+  defaultCourierName?: string | null;
+  defaultCourierPhone?: string | null;
+  defaultCourierVehicle?: string | null;
+  defaultCourierPlate?: string | null;
+
   phone: string;
   address: string;
   pixKey?: string | null;
@@ -99,12 +109,17 @@ export interface OrderData {
   changeFor?: number | null;
   status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
   notes?: string | null;
+  
+  // Courier Info
   courierName?: string | null;
   courierPhone?: string | null;
+  courierVehicle?: string | null;
+  courierPlate?: string | null;
   courierLat?: number | null;
   courierLng?: number | null;
   targetLat?: number | null;
   targetLng?: number | null;
+  
   whatsappSent: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;

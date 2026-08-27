@@ -9,25 +9,31 @@ generator client {
 }
 
 model StoreSettings {
-  id            String   @id @default("default")
-  name          String   @default("Cardápio Online")
-  subName       String   @default("")
-  logoUrl       String?
-  bannerUrl     String?
-  announcement  String?  @default("")
-  isOpen        Boolean  @default(true)
+  id                    String   @id @default("default")
+  name                  String   @default("Cardápio Online")
+  subName               String   @default("")
+  logoUrl               String?
+  bannerUrl             String?
+  announcement          String?  @default("")
+  isOpen                Boolean  @default(true)
   
   // Autenticação do Administrador
-  adminUser     String   @default("admin")
-  adminEmail    String   @default("admin@cardapio.com")
-  adminPassword String   @default("157864")
-  adminPin      String   @default("157864")
+  adminUser             String   @default("admin")
+  adminEmail            String   @default("admin@cardapio.com")
+  adminPassword         String   @default("157864")
+  adminPin              String   @default("157864")
   
-  phone         String   @default("")
-  address       String   @default("")
-  pixKey        String?  @default("")
-  minOrderValue Float    @default(0)
-  updatedAt     DateTime @updatedAt
+  // Dados do Entregador / Motoboy Padrão
+  defaultCourierName    String?  @default("Carlos Motoboy")
+  defaultCourierPhone   String?  @default("11999998888")
+  defaultCourierVehicle String?  @default("Moto Honda Fan 160")
+  defaultCourierPlate   String?  @default("")
+  
+  phone                 String   @default("")
+  address               String   @default("")
+  pixKey                String?  @default("")
+  minOrderValue         Float    @default(0)
+  updatedAt             DateTime @updatedAt
 }
 
 model Category {
@@ -116,9 +122,11 @@ model Order {
   status         String      @default("PENDING") // "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
   notes          String?
   
-  // Real-time Courier Tracking
+  // Real-time Courier Tracking & Info
   courierName    String?     @default("Carlos Motoboy")
   courierPhone   String?     @default("11999998888")
+  courierVehicle String?     @default("Moto Honda Fan 160")
+  courierPlate   String?     @default("")
   courierLat     Float?
   courierLng     Float?
   targetLat      Float?
