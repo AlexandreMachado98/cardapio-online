@@ -102,39 +102,59 @@ export default function HomePage() {
 
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-3 text-center md:text-left max-w-xl">
-              {/* Kitchen Logo + Badge */}
-              <div className="flex items-center justify-center md:justify-start gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-xl border border-orange-400/30 overflow-hidden flex-shrink-0">
-                  {storeSettings?.logoUrl ? (
-                    <img
-                      src={storeSettings.logoUrl}
-                      alt={storeName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Flame className="w-7 h-7 text-white animate-pulse" />
-                  )}
-                </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 px-3 py-0.5 rounded-full text-xs font-bold">
-                    <Flame className="w-3.5 h-3.5 text-orange-500" />
-                    <span>{storeName} - {storeSubName}</span>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                {/* Circular Logo with Glowing Status Border */}
+                <div className="relative flex-shrink-0">
+                  <div
+                    className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                      isOpen
+                        ? 'border-4 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
+                        : 'border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
+                    }`}
+                  >
+                    {storeSettings?.logoUrl ? (
+                      <img
+                        src={storeSettings.logoUrl}
+                        alt="Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white">
+                        <Flame className="w-10 h-10 animate-pulse" />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">Cardápio Oficial de Delivery</p>
+
+                  {/* Status Badge Tag */}
+                  <div
+                    className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow text-white whitespace-nowrap ${
+                      isOpen
+                        ? 'bg-emerald-600 border-emerald-400'
+                        : 'bg-red-600 border-red-400'
+                    }`}
+                  >
+                    {isOpen ? 'Aberto' : 'Fechado'}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="text-xs uppercase tracking-wider font-bold text-orange-400">
+                      {isOpen ? '🔥 Assando na Brasa na Hora' : '⏰ Fechado no Momento'}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight uppercase">
+                    {storeName} {storeSubName ? `- ${storeSubName}` : ''}
+                  </h1>
+                  <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-lg">
+                    Espetinhos suculentos na brasa, guarnições da casa e bebidas geladas. Faça seu pedido com rastreio ao vivo por GPS!
+                  </p>
                 </div>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                Faça seu Pedido Online com <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Rastreio em Tempo Real</span>
-              </h1>
-
-              <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
-                Espetinhos suculentos na brasa, guarnições da casa e bebidas geladas. Selecione seus itens e acompanhe a rota do motoboy ao vivo pelo mapa!
-              </p>
-
               {/* Badges / Info */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2 text-xs text-zinc-300">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-zinc-300">
                 <div className="flex items-center gap-1.5 bg-zinc-800/80 px-2.5 py-1.5 rounded-lg border border-zinc-700/60">
                   <Clock className="w-4 h-4 text-orange-400" />
                   <span>30-45 min</span>

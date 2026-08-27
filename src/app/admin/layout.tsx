@@ -17,6 +17,7 @@ import {
   User,
   Eye,
   EyeOff,
+  Power,
   Flame,
 } from 'lucide-react';
 
@@ -32,6 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Quick Open/Closed Status State
+  const [isOpen, setIsOpen] = useState(true);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+
   useEffect(() => {
     try {
       const auth = localStorage.getItem('saborespeto_admin_auth');
@@ -44,6 +49,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setIsChecking(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStoreStatus();
+    }
+  }, [isAuthenticated]);
+
+  const fetchStoreStatus = async () => {
+    try {
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const data = await res.json();
+        setIsOpen(data.isOpen ?? true);
+      }
+    } catch (e) {
+      console.error('Erro ao buscar status', e);
+    }
+  };
+
+  const handleToggleStoreStatus = async () => {
+    try {
+      setTogglingStatus(true);
+      const newStatus = !isOpen;
+      setIsOpen(newStatus);
+      await fetch('/api/config/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isOpen: newStatus }),
+      });
+    } catch (e) {
+      console.error('Erro ao mudar status', e);
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,10 +232,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-12">
-      {/* Dedicated Admin Header */}
+      {/* Dedicated Admin Header with Quick Status Switcher */}
       <div className="bg-zinc-900/90 border-b border-zinc-800 sticky top-16 z-30 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             {navLinks.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -216,20 +257,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             })}
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Quick Open/Closed Status Switch & Actions */}
+          <div className="flex items-center justify-between sm:justify-end gap-2.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800">
+            {/* 🔴/🟢 BOTÃO DE FÁCIL ACESSO: ABERTO / FECHADO */}
+            <button
+              onClick={handleToggleStoreStatus}
+              disabled={togglingStatus}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold shadow-md transition-all active:scale-95 border ${
+                isOpen
+                  ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/40'
+                  : 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border-red-500/40'
+              }`}
+              title="Clique para alternar o status da loja para os clientes"
+            >
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'
+                }`}
+              />
+              <span>{isOpen ? 'Loja Aberta' : 'Loja Fechada'}</span>
+              <Power className="w-3.5 h-3.5 ml-0.5 opacity-75" />
+            </button>
+
             <Link
               href="/"
               target="_blank"
-              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
               title="Abrir visão do cliente"
             >
-              <span className="hidden sm:inline">Ver Cardápio</span>
+              <span className="hidden md:inline">Ver Cardápio</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-red-400 bg-zinc-800/80 hover:bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-red-400 bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
               title="Sair do Painel"
             >
               <LogOut className="w-3.5 h-3.5" />
