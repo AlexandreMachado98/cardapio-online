@@ -27,15 +27,21 @@ import {
   LayoutGrid,
   Truck,
   Printer,
+  Copy,
+  Check,
+  Bot,
+  ExternalLink,
+  QrCode,
+  Share2,
 } from 'lucide-react';
 import PrintReceiptModal from '@/components/admin/PrintReceiptModal';
 
 const statusOptions = [
-  { value: 'ALL', label: 'Todos os Pedidos' },
-  { value: 'PENDING', label: 'Recebidos / Novos' },
+  { value: 'ALL', label: 'Todos' },
+  { value: 'PENDING', label: 'Novos' },
   { value: 'PREPARING', label: 'Na Brasa' },
-  { value: 'READY', label: 'Embalados / Prontos' },
-  { value: 'OUT_FOR_DELIVERY', label: 'Saiu p/ Entrega' },
+  { value: 'READY', label: 'Prontos' },
+  { value: 'OUT_FOR_DELIVERY', label: 'Em Entrega' },
   { value: 'DELIVERED', label: 'Entregues' },
 ];
 
@@ -46,6 +52,17 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [orderToPrint, setOrderToPrint] = useState<OrderData | null>(null);
+
+  // Link & Chatbot State
+  const [siteUrl, setSiteUrl] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSiteUrl(window.location.origin);
+    }
+  }, []);
 
   const fetchOrders = async () => {
     try {
@@ -78,12 +95,9 @@ export default function AdminPage() {
 
       if (res.ok) {
         const data = await res.json();
-        
-        // Se mudou para Saiu para Entrega, abrir automaticamente no WhatsApp
         if (newStatus === 'OUT_FOR_DELIVERY' && data.whatsappLink) {
           window.open(data.whatsappLink, '_blank');
         }
-
         fetchOrders();
       }
     } catch (err) {
@@ -91,6 +105,21 @@ export default function AdminPage() {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleCopyLink = () => {
+    if (!siteUrl) return;
+    navigator.clipboard.writeText(siteUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 3000);
+  };
+
+  const chatbotMessageText = `Olá! Seja muito bem-vindo ao nosso cardápio digital! 🍢🔥\n\nConfira nossos espetinhos artesanais, combos e bebidas e faça seu pedido online com rastreamento ao vivo pelo mapa:\n\n👉 ${siteUrl}\n\nAguardamos seu pedido! Bom apetite! 😋`;
+
+  const handleCopyChatbotMessage = () => {
+    navigator.clipboard.writeText(chatbotMessageText);
+    setCopiedMessage(true);
+    setTimeout(() => setCopiedMessage(false), 3000);
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -111,73 +140,74 @@ export default function AdminPage() {
   ).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      {/* Admin Header with Management Nav */}
-      <div className="bg-zinc-900 border border-zinc-800 p-5 sm:p-6 rounded-3xl shadow-xl space-y-4">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-6">
+      {/* 🚀 BANNER: LINK DO CARDÁPIO & MENSAGEM PARA CHATBOT / INSTAGRAM */}
+      <div className="bg-gradient-to-r from-orange-950/70 via-zinc-900 to-zinc-900 border border-orange-500/40 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center border border-orange-500/30">
-              <Flame className="w-7 h-7 animate-pulse" />
+            <div className="w-12 h-12 rounded-2xl bg-orange-600/20 text-orange-400 flex items-center justify-center border border-orange-500/40 flex-shrink-0">
+              <Bot className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white">
-                Painel da Cozinha & Gestão do Cardápio
-              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase font-bold tracking-wider text-orange-400">
+                  Divulgação & Automação
+                </span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.2 rounded-full font-semibold">
+                  Pronto para Chatbot
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white">
+                Link do seu Cardápio para Clientes & WhatsApp
+              </h2>
               <p className="text-xs text-zinc-400">
-                Fila de pedidos, controle do cardápio, produtos, categorias e perfil
+                Copie o link público ou a mensagem pré-formatada para configurar no seu robô/chatbot do WhatsApp ou Bio do Instagram.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={fetchOrders}
-              className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow"
+              onClick={handleCopyLink}
+              className="flex-1 sm:flex-initial bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition-all active:scale-95"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Atualizar Fila</span>
+              {copiedLink ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+              <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link do Cardápio'}</span>
+            </button>
+
+            <button
+              onClick={handleCopyChatbotMessage}
+              className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition-all active:scale-95"
+            >
+              {copiedMessage ? <Check className="w-4 h-4 text-white" /> : <MessageCircle className="w-4 h-4" />}
+              <span>{copiedMessage ? 'Mensagem Copiada!' : 'Copiar Texto p/ Chatbot'}</span>
             </button>
           </div>
         </div>
 
-        {/* Action Management Buttons Bar */}
-        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-zinc-800">
-          <Link
-            href="/admin/produtos"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
-          >
-            <ShoppingBag className="w-4 h-4 text-orange-400" />
-            <span>Produtos & Promoções</span>
-          </Link>
+        {/* Display Current URL Box */}
+        <div className="bg-zinc-950 p-3 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 overflow-hidden text-zinc-300">
+            <span className="text-zinc-500 font-bold">Link Oficial:</span>
+            <code className="text-orange-400 font-mono font-bold truncate select-all">
+              {siteUrl || 'https://seu-link.vercel.app'}
+            </code>
+          </div>
 
-          <Link
-            href="/admin/categorias"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-400 hover:text-white flex items-center gap-1 self-end sm:self-auto text-[11px] font-semibold transition-colors"
           >
-            <LayoutGrid className="w-4 h-4 text-amber-400" />
-            <span>Categorias & Visibilidade</span>
-          </Link>
-
-          <Link
-            href="/admin/taxas"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
-          >
-            <Truck className="w-4 h-4 text-blue-400" />
-            <span>Taxas de Frete</span>
-          </Link>
-
-          <Link
-            href="/admin/configuracoes"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
-          >
-            <Settings className="w-4 h-4 text-emerald-400" />
-            <span>Perfil da Cozinha & Logo</span>
-          </Link>
+            <span>Abrir Cardápio</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between">
           <div>
             <div className="text-xs text-zinc-400 font-medium">Pedidos em Andamento</div>
@@ -216,8 +246,8 @@ export default function AdminPage() {
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto no-scrollbar">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 p-3 sm:p-4 rounded-2xl">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar">
           {statusOptions.map((opt) => (
             <button
               key={opt.value}
@@ -239,7 +269,7 @@ export default function AdminPage() {
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Buscar por cliente ou nº..."
+            placeholder="Buscar pedido ou cliente..."
             className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-orange-500"
           />
         </div>
@@ -255,9 +285,12 @@ export default function AdminPage() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center space-y-2">
           <PackageCheck className="w-10 h-10 text-zinc-600 mx-auto" />
           <h3 className="text-sm font-bold text-zinc-300">Nenhum pedido nesta fila no momento</h3>
+          <p className="text-xs text-zinc-500">
+            Assim que um cliente fizer um pedido, ele aparecerá aqui automaticamente com alerta sonoro.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
           {filteredOrders.map((order) => {
             const statusInfo = getStatusDetails(order.status);
             const isUpdating = updatingId === order.id;
@@ -282,7 +315,7 @@ export default function AdminPage() {
             return (
               <div
                 key={order.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-xl space-y-4 hover:border-zinc-700 transition-all flex flex-col justify-between"
+                className="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4 hover:border-zinc-700 transition-all flex flex-col justify-between"
               >
                 {/* Order Card Header */}
                 <div className="space-y-2">
@@ -326,27 +359,51 @@ export default function AdminPage() {
 
                   {/* Items List */}
                   <div className="space-y-1.5 pt-1 text-xs text-zinc-300">
-                    {order.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between py-1 border-b border-zinc-800/40 last:border-none"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold bg-zinc-800 text-orange-400 px-1.5 py-0.5 rounded text-[11px]">
-                            {item.quantity}x
+                    {order.items.map((item) => {
+                      let customComps: string[] = [];
+                      if (item.complements) {
+                        try {
+                          const parsed = JSON.parse(item.complements);
+                          if (Array.isArray(parsed)) customComps = parsed;
+                        } catch (e) {}
+                      }
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between py-1 border-b border-zinc-800/40 last:border-none"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold bg-zinc-800 text-orange-400 px-1.5 py-0.5 rounded text-[11px]">
+                                {item.quantity}x
+                              </span>
+                              <span className="font-medium text-zinc-100">{item.productName}</span>
+                              {item.meatPoint && (
+                                <span className="text-[10px] text-orange-400 bg-orange-500/10 px-1 rounded">
+                                  {item.meatPoint}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Complementos */}
+                            {customComps.length > 0 && (
+                              <div className="flex flex-wrap gap-1 text-[10px] text-zinc-400 pl-6">
+                                {customComps.map((c, i) => (
+                                  <span key={i} className="bg-zinc-800 px-1.5 py-0.2 rounded">
+                                    + {c}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <span className="font-semibold text-zinc-400">
+                            {formatBRL(item.totalPrice)}
                           </span>
-                          <span className="font-medium">{item.productName}</span>
-                          {item.meatPoint && (
-                            <span className="text-[10px] text-orange-400 bg-orange-500/10 px-1 rounded">
-                              {item.meatPoint}
-                            </span>
-                          )}
                         </div>
-                        <span className="font-semibold text-zinc-400">
-                          {formatBRL(item.totalPrice)}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -401,7 +458,7 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Extra links: WhatsApp and Rastreio */}
+                  {/* Extra links: WhatsApp and Rastreio and Print */}
                   <div className="flex items-center gap-2 pt-1">
                     <a
                       href={waLink}
@@ -413,7 +470,6 @@ export default function AdminPage() {
                       <span>Notificar WhatsApp</span>
                     </a>
 
-                    {/* Botão de Impressão de Comanda */}
                     <button
                       onClick={() => setOrderToPrint(order)}
                       className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white p-2 rounded-xl border border-zinc-700 transition-all"

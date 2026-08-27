@@ -11,15 +11,21 @@ generator client {
 model StoreSettings {
   id            String   @id @default("default")
   name          String   @default("Cardápio Online")
-  subName       String   @default("Espetinho & Brasa")
+  subName       String   @default("")
   logoUrl       String?
   bannerUrl     String?
-  announcement  String?  @default("🔥 Espetinhos 100% artesanais assados na brasa na hora! Faça seu pedido.")
+  announcement  String?  @default("")
   isOpen        Boolean  @default(true)
-  adminPin      String   @default("157864") // Senha de acesso ao painel admin
-  phone         String   @default("11987654321")
-  address       String   @default("Av. Principal dos Espetos, 500 - Centro")
-  pixKey        String?  @default("11987654321")
+  
+  // Autenticação do Administrador
+  adminUser     String   @default("admin")
+  adminEmail    String   @default("admin@cardapio.com")
+  adminPassword String   @default("157864")
+  adminPin      String   @default("157864")
+  
+  phone         String   @default("")
+  address       String   @default("")
+  pixKey        String?  @default("")
   minOrderValue Float    @default(0)
   updatedAt     DateTime @updatedAt
 }
