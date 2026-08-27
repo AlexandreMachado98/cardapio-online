@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Signal,
   CheckCircle2,
+  Crosshair,
 } from 'lucide-react';
 import { createWhatsAppLink } from '@/lib/whatsapp';
 
@@ -42,64 +43,117 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
   const mapInstanceRef = useRef<any>(null);
   const courierMarkerRef = useRef<any>(null);
   const restaurantMarkerRef = useRef<any>(null);
+  const targetMarkerRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
 
   // Dynamic Restaurant origin point from settings
-  const [restaurantCoords, setRestaurantCoords] = useState<[number, number]>([-23.55052, -46.633308]);
+  const [restaurantCoords, setRestaurantCoords] = useState<[number, number] | null>(null);
   const [storeAddress, setStoreAddress] = useState<string>('Cozinha / Restaurante');
 
   // Customer destination point
-  const [targetCoords, setTargetCoords] = useState<[number, number]>([
-    order.targetLat || -23.561684,
-    order.targetLng || -46.655981,
-  ]);
+  const [targetCoords, setTargetCoords] = useState<[number, number] | null>(null);
 
   // Real Courier Coordinates from Database
-  const [courierPos, setCourierPos] = useState<[number, number]>([
-    order.courierLat || -23.55052,
-    order.courierLng || -46.633308,
-  ]);
+  const [courierPos, setCourierPos] = useState<[number, number] | null>(null);
 
-  const [hasRealGps, setHasRealGps] = useState(Boolean(order.courierLat && order.courierLng));
+  const [hasRealGps, setHasRealGps] = useState(false);
   const [distanceKm, setDistanceKm] = useState<number>(0);
   const [etaMinutes, setEtaMinutes] = useState<number>(10);
+  const [mapReady, setMapReady] = useState(false);
 
-  // Fetch Kitchen Coordinates on mount
+  // 1. Load Real Store & Target Location
   useEffect(() => {
-    async function loadStoreLocation() {
+    let isCancelled = false;
+
+    async function initLocations() {
       try {
-        const res = await fetch('/api/config');
-        if (res.ok) {
-          const cfg = await res.json();
+        // Fetch Store Settings
+        const configRes = await fetch('/api/config');
+        let rLat = -23.5505;
+        let rLng = -46.6333;
+        let storeAddr = 'Cozinha';
+
+        if (configRes.ok) {
+          const cfg = await configRes.json();
           if (cfg.lat && cfg.lng) {
-            const coords: [number, number] = [Number(cfg.lat), Number(cfg.lng)];
-            setRestaurantCoords(coords);
-            setStoreAddress(cfg.address || 'Cozinha / Restaurante');
-            if (!order.courierLat) {
-              setCourierPos(coords);
-            }
+            rLat = Number(cfg.lat);
+            rLng = Number(cfg.lng);
+            storeAddr = cfg.address || 'Cozinha';
           }
         }
-      } catch (e) {
-        console.error(e);
+
+        if (isCancelled) return;
+        setRestaurantCoords([rLat, rLng]);
+        setStoreAddress(storeAddr);
+
+        // Determine Target (Customer) Coordinates
+        let tLat = order.targetLat;
+        let tLng = order.targetLng;
+
+        // If target coordinates are default SP or missing, and order has addressText, geocode it
+        const isDefaultSP = tLat && tLng && Math.abs(tLat - (-23.561684)) < 0.001 && Math.abs(tLng - (-46.655981)) < 0.001;
+        if ((!tLat || !tLng || isDefaultSP) && order.addressText && order.addressText !== 'Retirada no Balcão') {
+          try {
+            const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(order.addressText)}`);
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              if (geoData.lat && geoData.lng) {
+                tLat = geoData.lat;
+                tLng = geoData.lng;
+              }
+            }
+          } catch (e) {}
+        }
+
+        // If still missing or equal to SP default, place near the actual kitchen (1.2km away)
+        if (!tLat || !tLng || isDefaultSP) {
+          tLat = rLat + 0.008;
+          tLng = rLng + 0.008;
+        }
+
+        if (isCancelled) return;
+        setTargetCoords([tLat, tLng]);
+
+        // Courier position (starts at kitchen or real recorded GPS)
+        let cLat = order.courierLat;
+        let cLng = order.courierLng;
+        const isCourierDefaultSP = cLat && cLng && Math.abs(cLat - (-23.5505)) < 0.001 && Math.abs(cLng - (-46.6333)) < 0.001;
+
+        if (!cLat || !cLng || isCourierDefaultSP) {
+          cLat = rLat;
+          cLng = rLng;
+        } else {
+          setHasRealGps(true);
+        }
+
+        if (isCancelled) return;
+        setCourierPos([cLat, cLng]);
+
+        // Distance & ETA
+        const dist = calculateDistanceKm(cLat, cLng, tLat, tLng);
+        setDistanceKm(Number(dist.toFixed(1)));
+        setEtaMinutes(Math.max(2, Math.round((dist / 30) * 60) + 2));
+
+        setMapReady(true);
+      } catch (err) {
+        console.error('Erro ao preparar localização do mapa:', err);
       }
     }
-    loadStoreLocation();
-  }, [order.courierLat]);
 
-  // Calculate real distance and realistic ETA
-  const updateDistanceAndEta = (cLat: number, cLng: number, tCoords = targetCoords) => {
-    const dist = calculateDistanceKm(cLat, cLng, tCoords[0], tCoords[1]);
-    setDistanceKm(Number(dist.toFixed(1)));
-    const calculatedMinutes = Math.max(2, Math.round((dist / 30) * 60) + 2);
-    setEtaMinutes(calculatedMinutes);
-  };
+    initLocations();
 
-  // Initialize Leaflet Map with direct OpenStreetMap standard tiles (Zero API key / zero query errors)
+    return () => {
+      isCancelled = true;
+    };
+  }, [order.id, order.addressText, order.targetLat, order.targetLng, order.courierLat, order.courierLng]);
+
+  // 2. Initialize Leaflet Map once Real Coordinates are Loaded
   useEffect(() => {
-    async function initLeaflet() {
-      if (typeof window === 'undefined' || !mapContainerRef.current) return;
+    if (!mapReady || !restaurantCoords || !targetCoords || !courierPos || !mapContainerRef.current) return;
 
+    let isMounted = true;
+
+    async function initLeaflet() {
       const L = (await import('leaflet')).default;
 
       // Fix default icons
@@ -110,40 +164,42 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
 
-      if (!mapInstanceRef.current && mapContainerRef.current) {
+      if (!mapInstanceRef.current && mapContainerRef.current && restaurantCoords && targetCoords && courierPos) {
+        const initialView = courierPos;
+
         const map = L.map(mapContainerRef.current, {
           zoomControl: true,
           attributionControl: false,
-        }).setView(courierPos, 14);
+        }).setView(initialView, 14);
 
-        // Official OpenStreetMap Standard Tiles (No API key needed, zero query issues)
+        // Standard OpenStreetMap Tiles
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
         }).addTo(map);
 
-        // 1. Restaurant Marker (Origem Real da Cozinha)
+        // 1. Restaurant Marker
         const restaurantIcon = L.divIcon({
           className: 'custom-rest-icon',
-          html: `<div style="background-color: #ea580c; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 16px;">🔥</div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
+          html: `<div style="background-color: #ea580c; color: white; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 18px;">🔥</div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
         });
         restaurantMarkerRef.current = L.marker(restaurantCoords, { icon: restaurantIcon })
           .addTo(map)
           .bindPopup(`<b>Cozinha</b><br>${storeAddress}`);
 
-        // 2. Customer Destination Marker (Destino)
+        // 2. Customer Destination Marker
         const targetIcon = L.divIcon({
           className: 'custom-target-icon',
-          html: `<div style="background-color: #10b981; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 16px;">📍</div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
+          html: `<div style="background-color: #10b981; color: white; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 18px;">📍</div>`,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
         });
-        L.marker(targetCoords, { icon: targetIcon })
+        targetMarkerRef.current = L.marker(targetCoords, { icon: targetIcon })
           .addTo(map)
           .bindPopup(`<b>Seu Endereço</b><br>${order.addressText || 'Destino'}`);
 
-        // 3. Real Courier Motoboy Marker (Ao Vivo)
+        // 3. Courier Marker
         const courierIcon = L.divIcon({
           className: 'custom-courier-icon',
           html: `<div style="background-color: #f97316; color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 0 20px rgba(249,115,22,0.9); font-size: 22px;">🛵</div>`,
@@ -154,7 +210,7 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
           .addTo(map)
           .bindPopup(`<b>${order.courierName || 'Entregador'}</b><br>Deslocamento por GPS ao vivo!`);
 
-        // 4. Polyline Route
+        // 4. Route Polyline
         const latlngs: [number, number][] = [restaurantCoords, courierPos, targetCoords];
         polylineRef.current = L.polyline(latlngs, {
           color: '#ea580c',
@@ -163,10 +219,10 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
           dashArray: '6, 8',
         }).addTo(map);
 
-        map.fitBounds(L.latLngBounds([restaurantCoords, targetCoords]).pad(0.2));
+        // Adjust bounds to fit restaurant, courier, and destination
+        const bounds = L.latLngBounds([restaurantCoords, targetCoords, courierPos]);
+        map.fitBounds(bounds.pad(0.25));
         mapInstanceRef.current = map;
-
-        updateDistanceAndEta(courierPos[0], courierPos[1]);
       }
     }
 
@@ -178,21 +234,11 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         mapInstanceRef.current = null;
       }
     };
-  }, [restaurantCoords]);
+  }, [mapReady, restaurantCoords, targetCoords]);
 
-  // Update markers when restaurant coordinates load
+  // 3. Real-Time GPS Polling from Motoboy
   useEffect(() => {
-    if (restaurantMarkerRef.current) {
-      restaurantMarkerRef.current.setLatLng(restaurantCoords);
-    }
-    if (polylineRef.current && mapInstanceRef.current) {
-      polylineRef.current.setLatLngs([restaurantCoords, courierPos, targetCoords]);
-    }
-  }, [restaurantCoords]);
-
-  // REAL GPS POLLING: Fetch Motoboy Smartphone GPS every 3 seconds
-  useEffect(() => {
-    if (order.status !== 'OUT_FOR_DELIVERY') return;
+    if (!mapReady || order.status !== 'OUT_FOR_DELIVERY') return;
 
     const pollRealGps = async () => {
       try {
@@ -203,26 +249,59 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
             const newPos: [number, number] = [Number(data.courierLat), Number(data.courierLng)];
             setCourierPos(newPos);
             setHasRealGps(true);
-            updateDistanceAndEta(newPos[0], newPos[1]);
 
-            // Update marker on Leaflet map
+            if (targetCoords) {
+              const dist = calculateDistanceKm(newPos[0], newPos[1], targetCoords[0], targetCoords[1]);
+              setDistanceKm(Number(dist.toFixed(1)));
+              setEtaMinutes(Math.max(2, Math.round((dist / 30) * 60) + 2));
+            }
+
             if (courierMarkerRef.current) {
               courierMarkerRef.current.setLatLng(newPos);
             }
-            if (polylineRef.current) {
+            if (polylineRef.current && restaurantCoords && targetCoords) {
               polylineRef.current.setLatLngs([restaurantCoords, newPos, targetCoords]);
             }
           }
         }
       } catch (err) {
-        console.error('Erro ao sincronizar GPS real do motoboy', err);
+        console.error('Erro ao sincronizar GPS do motoboy', err);
       }
     };
 
     pollRealGps();
     const interval = setInterval(pollRealGps, 3000);
     return () => clearInterval(interval);
-  }, [order.id, order.status, restaurantCoords]);
+  }, [mapReady, order.id, order.status, targetCoords, restaurantCoords]);
+
+  // 4. Center on User GPS
+  const handleCenterOnUserGPS = () => {
+    if (!navigator.geolocation || !mapInstanceRef.current) {
+      alert('Geolocalização não disponível no navegador.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        mapInstanceRef.current.setView([userLat, userLng], 15);
+        if (targetMarkerRef.current) {
+          targetMarkerRef.current.setLatLng([userLat, userLng]);
+        }
+        setTargetCoords([userLat, userLng]);
+        if (courierPos) {
+          const dist = calculateDistanceKm(courierPos[0], courierPos[1], userLat, userLng);
+          setDistanceKm(Number(dist.toFixed(1)));
+          setEtaMinutes(Math.max(2, Math.round((dist / 30) * 60) + 2));
+        }
+      },
+      (err) => {
+        alert(`Erro ao obter sua localização: ${err.message}`);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   const motoboyWhatsApp = order.courierPhone
     ? createWhatsAppLink(order.courierPhone, `Olá ${order.courierName || 'Entregador'}, sou o cliente do Pedido #${order.orderNumber}!`)
@@ -278,45 +357,62 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
               {hasRealGps ? (
                 <strong className="text-emerald-400">Sinal GPS Conectado ao Celular do Motoboy</strong>
               ) : (
-                <span className="text-amber-400">Aguardando início da rota do motoboy...</span>
+                <span className="text-amber-400">Aguardando início da transmissão do motoboy...</span>
               )}
             </span>
-            <span className="text-zinc-600">• Atualizado há segundos</span>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleCenterOnUserGPS}
+              className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              title="Ajustar mapa para a minha localização atual no GPS"
+            >
+              <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Meu GPS</span>
+            </button>
+
             <a
               href={motoboyWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow"
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp do Entregador</span>
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>WhatsApp Entregador</span>
             </a>
           </div>
         </div>
       </div>
 
       {/* Leaflet Real-time Map Box */}
-      <div className="relative w-full h-[450px] rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950">
-        <div ref={mapContainerRef} className="w-full h-full" />
+      <div className="relative w-full h-[460px] rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950">
+        {!mapReady ? (
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-3 bg-zinc-950">
+            <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-zinc-400">Carregando mapa e coordenadas...</p>
+          </div>
+        ) : (
+          <div ref={mapContainerRef} className="w-full h-full" />
+        )}
 
         {/* Floating Legend */}
-        <div className="absolute bottom-4 left-4 z-[400] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/80 rounded-2xl p-3 text-xs text-zinc-200 space-y-1.5 shadow-2xl">
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-orange-600 inline-block border-2 border-white"></span>
-            <span className="font-semibold">Cozinha (Origem Real)</span>
+        {mapReady && (
+          <div className="absolute bottom-4 left-4 z-[400] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/80 rounded-2xl p-3 text-xs text-zinc-200 space-y-1.5 shadow-2xl">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-orange-600 inline-block border-2 border-white"></span>
+              <span className="font-semibold">Cozinha (Origem Real)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block border-2 border-white animate-pulse"></span>
+              <span className="font-bold text-orange-400">Motoboy em tempo real</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block border-2 border-white"></span>
+              <span className="font-semibold">Seu Endereço de Entrega</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block border-2 border-white animate-pulse"></span>
-            <span className="font-bold text-orange-400">Motoboy em tempo real</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block border-2 border-white"></span>
-            <span className="font-semibold">Seu Endereço de Entrega</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
