@@ -5,6 +5,7 @@ import { Category, Product } from '@/types';
 import CategoryNav from '@/components/menu/CategoryNav';
 import ProductCard from '@/components/menu/ProductCard';
 import ProductModal from '@/components/menu/ProductModal';
+import { defaultStoreConfig } from '@/lib/config';
 import {
   Flame,
   Search,
@@ -16,6 +17,7 @@ import {
   Star,
   ChevronRight,
   TrendingUp,
+  Store,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
@@ -65,17 +67,31 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-3 text-center md:text-left max-w-xl">
-              <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 px-3 py-1 rounded-full text-xs font-bold">
-                <Flame className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-                <span>Espetinhos 100% Artesanais na Brasa</span>
+              {/* Kitchen Logo + Badge */}
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg border border-orange-400/30 overflow-hidden flex-shrink-0">
+                  {defaultStoreConfig.logoUrl ? (
+                    <img
+                      src={defaultStoreConfig.logoUrl}
+                      alt={defaultStoreConfig.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Flame className="w-6 h-6 text-white animate-pulse" />
+                  )}
+                </div>
+                <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 px-3 py-1 rounded-full text-xs font-bold">
+                  <Flame className="w-3.5 h-3.5 text-orange-500" />
+                  <span>{defaultStoreConfig.name} - {defaultStoreConfig.subName}</span>
+                </div>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                O Verdadeiro Sabor do <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Espetinho de Boteco</span> na sua Casa
+                Cardápio Digital & <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Delivery em Tempo Real</span>
               </h1>
 
               <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
-                Carnes nobres, queijos dourados, pão de alho recheado e guarnições crocantes. Faça seu pedido em minutos e acompanhe o entregador pelo mapa ao vivo!
+                Espetinhos suculentos na brasa, acompanhamentos especiais e bebidas trincando. Escolha suas opções favoritas, personalize seus itens e acompanhe a rota do motoboy ao vivo pelo mapa!
               </p>
 
               {/* Badges / Info */}
@@ -99,7 +115,7 @@ export default function HomePage() {
             <div className="w-full md:w-80 bg-zinc-800/60 backdrop-blur-md border border-zinc-700/70 p-4 rounded-2xl shadow-xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
-                  Status da Brasa
+                  Status da Cozinha
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
@@ -134,7 +150,7 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar espetinhos, picanha, queijo coalho, bebidas..."
+                placeholder="Buscar produtos, espetos, porções, bebidas..."
                 className="w-full bg-zinc-950 border border-zinc-700/80 rounded-2xl pl-11 pr-4 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-orange-500 shadow-inner"
               />
             </div>

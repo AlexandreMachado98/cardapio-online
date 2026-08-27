@@ -4,7 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Flame, ShoppingBag, User, UtensilsCrossed, ShieldAlert, Sparkles } from 'lucide-react';
+import { Flame, ShoppingBag, User, ShieldAlert, Image as ImageIcon } from 'lucide-react';
+import { defaultStoreConfig } from '@/lib/config';
 
 export default function Navbar() {
   const { totalItemCount, setIsCartOpen, total } = useCart();
@@ -13,21 +14,33 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800 shadow-lg">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
-            <Flame className="w-6 h-6 text-white animate-pulse" />
+        {/* Logo & Brand Name */}
+        <Link href="/" className="flex items-center gap-3 group">
+          {/* Logo Area */}
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform overflow-hidden border border-orange-400/30">
+            {defaultStoreConfig.logoUrl ? (
+              <img
+                src={defaultStoreConfig.logoUrl}
+                alt="Logo da Cozinha"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Flame className="w-6 h-6 text-white animate-pulse" />
+            )}
           </div>
+
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white group-hover:text-orange-400 transition-colors">
-                SABOR & ESPETO
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-orange-400 transition-colors uppercase">
+                {defaultStoreConfig.name} - {defaultStoreConfig.subName}
               </span>
               <span className="text-[10px] uppercase font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30">
-                Na Brasa
+                Online
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 hidden sm:block">Cardápio Artesanal & Delivery Rápido</p>
+            <p className="text-[11px] text-zinc-400 hidden sm:block">
+              {defaultStoreConfig.tagline}
+            </p>
           </div>
         </Link>
 

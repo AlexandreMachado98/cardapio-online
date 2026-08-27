@@ -1,3 +1,5 @@
+import { defaultStoreConfig } from './config';
+
 export interface WhatsAppOrderData {
   orderNumber: number;
   customerName: string;
@@ -15,12 +17,14 @@ export interface WhatsAppOrderData {
   paymentMethod: string;
   courierName?: string | null;
   trackingUrl: string;
+  storeName?: string;
 }
 
 export function generateWhatsAppMessage(data: WhatsAppOrderData): string {
   const isDelivery = data.deliveryType === 'DELIVERY';
+  const brandName = data.storeName || `${defaultStoreConfig.name} - ${defaultStoreConfig.subName}`;
   
-  let msg = `🔥 *SABOR & ESPETO - ATUALIZAÇÃO DO PEDIDO #${data.orderNumber}* 🔥\n\n`;
+  let msg = `🔥 *${brandName.toUpperCase()} - ATUALIZAÇÃO DO PEDIDO #${data.orderNumber}* 🔥\n\n`;
   msg += `Olá, *${data.customerName}*! Seu pedido acabou de sair para entrega! 🛵💨\n\n`;
   
   msg += `📋 *Resumo do Pedido:*\n`;
@@ -47,7 +51,6 @@ export function generateWhatsAppMessage(data: WhatsAppOrderData): string {
 }
 
 export function createWhatsAppLink(phone: string, text: string): string {
-  // Limpar telefone (apenas numeros)
   let cleanPhone = phone.replace(/\D/g, '');
   if (!cleanPhone.startsWith('55') && cleanPhone.length <= 11) {
     cleanPhone = '55' + cleanPhone;

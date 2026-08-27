@@ -71,7 +71,7 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         });
         L.marker(restaurantCoords, { icon: restaurantIcon })
           .addTo(map)
-          .bindPopup('<b>Sabor & Espeto</b><br>Restaurante / Cozinha');
+          .bindPopup('<b>Cozinha / Restaurante</b><br>Origem do Pedido');
 
         // 2. Customer Destination Marker
         const targetIcon = L.divIcon({

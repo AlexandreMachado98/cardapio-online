@@ -5,10 +5,11 @@ import { CartProvider } from '@/context/CartContext';
 import Navbar from '@/components/layout/Navbar';
 import BottomNav from '@/components/layout/BottomNav';
 import CartDrawer from '@/components/cart/CartDrawer';
+import { defaultStoreConfig } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'Sabor & Espeto | Cardápio Digital & Delivery de Espetinhos',
-  description: 'Os melhores espetinhos artesanais na brasa, acompanhamentos e bebidas com entrega rápida e rastreamento em tempo real.',
+  title: `${defaultStoreConfig.name} - ${defaultStoreConfig.subName} | Delivery & Rastreamento em Tempo Real`,
+  description: 'Cardápio digital interativo, pedidos online, acompanhamento de rota ao vivo por GPS e notificações.',
 };
 
 export default function RootLayout({
