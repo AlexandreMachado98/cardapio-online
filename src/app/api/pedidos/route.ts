@@ -2,6 +2,46 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateOrderConfirmationWhatsAppMessage, createWhatsAppLink } from '@/lib/whatsapp';
 
+// Helper to resolve customer address to real lat/lng near the store
+async function geocodeCustomerAddress(
+  addressText: string,
+  baseLat: number,
+  baseLng: number
+): Promise<{ lat: number; lng: number }> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      addressText + ', Brasil'
+    )}&limit=1`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'CardapioOnlineDelivery/1.0 (delivery-order-geocoding)',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao geocodificar endereço do cliente:', e);
+  }
+
+  // Fallback: place close to the actual restaurant (offset 0.5km - 1.5km), NOT in São Paulo!
+  const angle = Math.random() * 2 * Math.PI;
+  const distanceOffset = 0.008 + Math.random() * 0.008; // ~1km away
+  return {
+    lat: baseLat + Math.cos(angle) * distanceOffset,
+    lng: baseLng + Math.sin(angle) * distanceOffset,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -55,12 +95,15 @@ export async function POST(request: Request) {
 
     const cleanPhone = customerPhone.replace(/\D/g, '');
 
-    // Buscar configurações da loja para nome e entregador padrão
+    // 1. Buscar configurações da loja para coordenadas e dados do restaurante
     const settings = await prisma.storeSettings.findUnique({
       where: { id: 'default' },
     });
 
-    // 1. Criar ou atualizar cliente
+    const storeLat = settings?.lat ?? -23.5505;
+    const storeLng = settings?.lng ?? -46.6333;
+
+    // 2. Criar ou atualizar cliente
     let customer = await prisma.customer.findUnique({
       where: { phone: cleanPhone },
     });
@@ -83,36 +126,48 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Se for entrega, salvar endereço
+    // 3. Se for entrega, formatar endereço e resolver coordenadas reais
     let addressFormatted = 'Retirada no Balcão';
-    let targetLat = -23.561684;
-    let targetLng = -46.655981;
+    let targetLat = storeLat;
+    let targetLng = storeLng;
 
     if (deliveryType === 'DELIVERY') {
-      addressFormatted = `${street}, ${number}${complement ? ` - ${complement}` : ''}, ${neighborhood}${cep ? ` - CEP: ${cep}` : ''}`;
-      
-      // Salvar endereço do cliente se não existir
+      const parts = [
+        street ? `${street}, ${number || 'S/N'}` : '',
+        complement ? `(${complement})` : '',
+        neighborhood ? `Bairro: ${neighborhood}` : '',
+        cep ? `CEP: ${cep}` : '',
+      ].filter(Boolean);
+
+      addressFormatted = parts.join(' - ');
+
+      const searchAddress = `${street || ''} ${number || ''}, ${neighborhood || ''}`;
+      const resolvedTarget = await geocodeCustomerAddress(searchAddress, storeLat, storeLng);
+      targetLat = resolvedTarget.lat;
+      targetLng = resolvedTarget.lng;
+
+      // Salvar endereço do cliente
       await prisma.address.create({
         data: {
           customerId: customer.id,
-          street,
-          number,
+          street: street || '',
+          number: number || '',
           complement: complement || null,
-          neighborhood,
+          neighborhood: neighborhood || '',
           cep: cep || null,
-          lat: targetLat + (Math.random() - 0.5) * 0.01,
-          lng: targetLng + (Math.random() - 0.5) * 0.01,
+          lat: targetLat,
+          lng: targetLng,
         },
       });
     }
 
-    // 3. Gerar número de pedido único sequencial amigável
+    // 4. Gerar número de pedido único sequencial amigável
     const lastOrder = await prisma.order.findFirst({
       orderBy: { orderNumber: 'desc' },
     });
     const orderNumber = lastOrder ? lastOrder.orderNumber + 1 : 1001;
 
-    // 4. Criar o pedido com itens
+    // 5. Criar o pedido com itens e coordenadas vinculadas à loja real
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -133,8 +188,8 @@ export async function POST(request: Request) {
         courierPhone: settings?.defaultCourierPhone || '11999998888',
         courierVehicle: settings?.defaultCourierVehicle || 'Moto Honda Fan 160',
         courierPlate: settings?.defaultCourierPlate || '',
-        courierLat: -23.5505, // Ponto inicial (Restaurante)
-        courierLng: -46.6333,
+        courierLat: storeLat, // Ponto inicial é a localização real da cozinha
+        courierLng: storeLng,
         targetLat: targetLat,
         targetLng: targetLng,
         items: {
@@ -157,7 +212,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // 5. Gerar mensagem e link do WhatsApp para envio imediato
+    // 6. Gerar mensagem e link do WhatsApp para envio imediato
     const origin = request.headers.get('origin') || 'http://localhost:3000';
     const trackingUrl = `${origin}/pedido/${order.orderNumber}`;
 

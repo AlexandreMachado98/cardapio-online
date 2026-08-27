@@ -140,7 +140,7 @@ export default function StoreSettingsPage() {
     );
   };
 
-  // 🔍 Geocode Address using OpenStreetMap Nominatim (100% Free, No API Key)
+  // 🔍 Geocode Address using server-side endpoint
   const handleGeocodeAddress = async () => {
     if (!address.trim()) {
       alert('Por favor, digite o endereço da sua cozinha primeiro.');
@@ -149,21 +149,20 @@ export default function StoreSettingsPage() {
 
     setGeocoding(true);
     try {
-      const query = encodeURIComponent(address.trim() + ', Brasil');
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`
-      );
+      const res = await fetch(`/api/geocode?address=${encodeURIComponent(address.trim())}`);
 
       if (res.ok) {
-        const results = await res.json();
-        if (results.length > 0) {
-          setLat(String(results[0].lat));
-          setLng(String(results[0].lon));
-          setSuccess(`📍 Endereço localizado no mapa com sucesso! (${results[0].display_name})`);
+        const data = await res.json();
+        if (data.lat && data.lng) {
+          setLat(String(data.lat));
+          setLng(String(data.lng));
+          setSuccess(`📍 Endereço localizado no mapa com sucesso! (${data.displayName || 'Coordenadas atualizadas'})`);
           setTimeout(() => setSuccess(''), 5000);
         } else {
           alert('Endereço não encontrado com precisão. Tente adicionar a Cidade e Estado ou use o botão "Capturar meu GPS".');
         }
+      } else {
+        alert('Endereço não encontrado no mapa. Certifique-se de incluir Nome da Rua, Bairro e Cidade, ou use o botão "Capturar meu GPS".');
       }
     } catch (e) {
       console.error(e);
@@ -401,17 +400,36 @@ export default function StoreSettingsPage() {
             </p>
           </div>
 
-          {/* Coordenadas Geográficas Salvas */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 text-xs">
+          {/* Coordenadas Geográficas Salvas & Editáveis */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 text-xs">
             <div>
-              <span className="text-zinc-500 font-medium">Latitude da Cozinha:</span>
-              <div className="font-mono font-bold text-orange-400 mt-0.5">{lat || '-23.5505'}</div>
+              <label className="text-zinc-400 font-medium block">
+                Latitude da Cozinha (GPS):
+              </label>
+              <input
+                type="text"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="-23.5505"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-orange-400 font-mono font-bold mt-1 focus:outline-none focus:border-orange-500"
+              />
             </div>
             <div>
-              <span className="text-zinc-500 font-medium">Longitude da Cozinha:</span>
-              <div className="font-mono font-bold text-orange-400 mt-0.5">{lng || '-46.6333'}</div>
+              <label className="text-zinc-400 font-medium block">
+                Longitude da Cozinha (GPS):
+              </label>
+              <input
+                type="text"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                placeholder="-46.6333"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-orange-400 font-mono font-bold mt-1 focus:outline-none focus:border-orange-500"
+              />
             </div>
           </div>
+          <p className="text-[10px] text-zinc-500">
+            Dica: Você pode clicar em <strong>"Capturar meu GPS"</strong> enquanto estiver na cozinha para preencher automaticamente, ou digitar as coordenadas da sua cidade.
+          </p>
         </div>
 
         {/* Identidade Visual & Nomes */}
