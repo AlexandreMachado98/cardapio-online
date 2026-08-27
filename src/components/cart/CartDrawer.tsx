@@ -95,22 +95,32 @@ export default function CartDrawer() {
                             {item.name}
                           </h4>
                           
-                          {/* Selected Options */}
+                          {/* Selected Options & Complements */}
                           <div className="flex flex-wrap gap-1 mt-1 text-[11px] text-zinc-400">
                             {item.meatPoint && (
                               <span className="bg-orange-500/10 text-orange-400 px-1.5 py-0.2 rounded border border-orange-500/20">
                                 {item.meatPoint}
                               </span>
                             )}
-                            {item.farofa && (
-                              <span className="bg-zinc-700/60 text-zinc-300 px-1.5 py-0.2 rounded">
-                                + Farofa
-                              </span>
-                            )}
-                            {item.vinagrete && (
-                              <span className="bg-zinc-700/60 text-zinc-300 px-1.5 py-0.2 rounded">
-                                + Vinagrete
-                              </span>
+                            {item.selectedComplements && item.selectedComplements.length > 0 ? (
+                              item.selectedComplements.map((c, i) => (
+                                <span key={i} className="bg-zinc-700/60 text-zinc-300 px-1.5 py-0.2 rounded">
+                                  + {c}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                {item.farofa && (
+                                  <span className="bg-zinc-700/60 text-zinc-300 px-1.5 py-0.2 rounded">
+                                    + Farofa
+                                  </span>
+                                )}
+                                {item.vinagrete && (
+                                  <span className="bg-zinc-700/60 text-zinc-300 px-1.5 py-0.2 rounded">
+                                    + Vinagrete
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
 

@@ -48,6 +48,7 @@ model Product {
   categoryId    String
   category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   meatPoints    String?     // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
+  complements   String?     // JSON array: [{"name": "Farofa", "price": 0}, {"name": "Vinagrete", "price": 0}, ...]
   hasFarofa     Boolean     @default(true)
   hasVinagrete  Boolean     @default(true)
   createdAt     DateTime    @default(now())
@@ -136,5 +137,6 @@ model OrderItem {
   meatPoint   String?  // e.g. "Ao ponto"
   farofa      Boolean  @default(false)
   vinagrete   Boolean  @default(false)
+  complements String?  // JSON array of complement names selected
   notes       String?
 }

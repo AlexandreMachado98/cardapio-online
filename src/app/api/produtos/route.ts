@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    const all = searchParams.get('all') === 'true'; // Se true, traz para o painel admin
+    const all = searchParams.get('all') === 'true';
 
     const categories = await prisma.category.findMany({
       where: all ? {} : { active: true },
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       available,
       categoryId,
       meatPoints,
+      complements,
       hasFarofa,
       hasVinagrete,
     } = body;
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
         available: available !== undefined ? Boolean(available) : true,
         categoryId,
         meatPoints: meatPoints ? (typeof meatPoints === 'string' ? meatPoints : JSON.stringify(meatPoints)) : null,
+        complements: complements ? (typeof complements === 'string' ? complements : JSON.stringify(complements)) : null,
         hasFarofa: hasFarofa !== undefined ? Boolean(hasFarofa) : true,
         hasVinagrete: hasVinagrete !== undefined ? Boolean(hasVinagrete) : true,
       },

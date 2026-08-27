@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Product, CartItem } from '@/types';
+import { Product, CartItem, ProductComplement } from '@/types';
 import { useCart } from '@/context/CartContext';
-import { X, Plus, Minus, Check, Flame, Sparkles } from 'lucide-react';
+import { X, Plus, Minus, Check, Flame, Sparkles, CheckSquare, Square } from 'lucide-react';
 import { formatBRL } from '@/lib/utils';
 
 interface ProductModalProps {
@@ -16,15 +16,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedMeatPoint, setSelectedMeatPoint] = useState<string>('');
-  const [hasFarofa, setHasFarofa] = useState(false);
-  const [hasVinagrete, setHasVinagrete] = useState(false);
+  const [selectedComplements, setSelectedComplements] = useState<string[]>([]);
+  const [availableComplements, setAvailableComplements] = useState<ProductComplement[]>([]);
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (product) {
       setQuantity(1);
       setNotes('');
-      // Default meat point if available
+
+      // Meat Points
       if (product.meatPoints) {
         try {
           const parsed = JSON.parse(product.meatPoints);
@@ -37,8 +38,27 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       } else {
         setSelectedMeatPoint('');
       }
-      setHasFarofa(product.hasFarofa);
-      setHasVinagrete(product.hasVinagrete);
+
+      // Parse Complements
+      let comps: ProductComplement[] = [];
+      if (product.complements) {
+        try {
+          const parsed = JSON.parse(product.complements);
+          if (Array.isArray(parsed)) {
+            comps = parsed;
+          }
+        } catch (e) {
+          comps = [];
+        }
+      } else {
+        // Fallback
+        if (product.hasFarofa) comps.push({ name: 'Farofa Crocante da Casa', price: 0 });
+        if (product.hasVinagrete) comps.push({ name: 'Vinagrete Especial com Azeite', price: 0 });
+      }
+
+      setAvailableComplements(comps);
+      // Pre-select free complements by default
+      setSelectedComplements(comps.map((c) => c.name));
     }
   }, [product]);
 
@@ -53,17 +73,39 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     }
   }
 
+  const handleToggleComplement = (compName: string) => {
+    setSelectedComplements((prev) => {
+      if (prev.includes(compName)) {
+        return prev.filter((name) => name !== compName);
+      } else {
+        return [...prev, compName];
+      }
+    });
+  };
+
+  // Calculate extra price from selected complements
+  const extraPrice = availableComplements
+    .filter((c) => selectedComplements.includes(c.name) && (c.price || 0) > 0)
+    .reduce((sum, c) => sum + (c.price || 0), 0);
+
+  const unitPriceWithExtras = product.price + extraPrice;
+  const totalPrice = unitPriceWithExtras * quantity;
+
   const handleAddToCart = () => {
-    const cartItemId = `${product.id}-${selectedMeatPoint}-${hasFarofa}-${hasVinagrete}-${notes}-${Date.now()}`;
+    const cartItemId = `${product.id}-${selectedMeatPoint}-${selectedComplements.sort().join('-')}-${notes}-${Date.now()}`;
+
+    const hasFarofa = selectedComplements.some((c) => c.toLowerCase().includes('farofa'));
+    const hasVinagrete = selectedComplements.some((c) => c.toLowerCase().includes('vinagrete'));
 
     const item: CartItem = {
       cartItemId,
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price: unitPriceWithExtras,
       imageUrl: product.imageUrl,
       quantity,
       meatPoint: selectedMeatPoint || undefined,
+      selectedComplements: selectedComplements,
       farofa: hasFarofa,
       vinagrete: hasVinagrete,
       notes: notes.trim() || undefined,
@@ -72,8 +114,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     addItem(item);
     onClose();
   };
-
-  const totalPrice = product.price * quantity;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -111,12 +151,20 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
               {product.description}
             </p>
-            <div className="text-orange-400 font-extrabold text-lg mt-2">
-              {formatBRL(product.price)} <span className="text-xs text-zinc-500 font-normal">/ unid.</span>
+            <div className="flex items-baseline gap-2 mt-2">
+              <span className="text-orange-400 font-extrabold text-xl">
+                {formatBRL(product.price)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-xs text-zinc-500 line-through">
+                  {formatBRL(product.originalPrice)}
+                </span>
+              )}
+              <span className="text-xs text-zinc-500 font-normal">/ unid.</span>
             </div>
           </div>
 
-          {/* Ponto da Carne (se aplicável) */}
+          {/* Ponto da Carne */}
           {availableMeatPoints.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-zinc-800">
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
@@ -142,35 +190,45 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
           )}
 
-          {/* Acompanhamentos Gratuitos da Casa */}
-          {(product.hasFarofa || product.hasVinagrete) && (
+          {/* COMPLEMENTOS & ACOMPANHAMENTOS DINÂMICOS */}
+          {availableComplements.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-zinc-800">
-              <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Acompanhamentos Cortesia da Casa
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                  Complementos & Acompanhamentos
+                </label>
+                <span className="text-[11px] text-zinc-500">Escolha os desejados</span>
+              </div>
+
               <div className="space-y-2">
-                {product.hasFarofa && (
-                  <label className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors">
-                    <span className="text-xs text-zinc-200 font-medium">Farofa Crocante Artesanal</span>
-                    <input
-                      type="checkbox"
-                      checked={hasFarofa}
-                      onChange={(e) => setHasFarofa(e.target.checked)}
-                      className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-500"
-                    />
-                  </label>
-                )}
-                {product.hasVinagrete && (
-                  <label className="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors">
-                    <span className="text-xs text-zinc-200 font-medium">Vinagrete Especial com Azeite</span>
-                    <input
-                      type="checkbox"
-                      checked={hasVinagrete}
-                      onChange={(e) => setHasVinagrete(e.target.checked)}
-                      className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-500"
-                    />
-                  </label>
-                )}
+                {availableComplements.map((comp) => {
+                  const isChecked = selectedComplements.includes(comp.name);
+                  return (
+                    <label
+                      key={comp.name}
+                      onClick={() => handleToggleComplement(comp.name)}
+                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
+                        isChecked
+                          ? 'bg-zinc-950 border-orange-500/50 text-white'
+                          : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-500 cursor-pointer"
+                        />
+                        <span className="text-xs font-medium">{comp.name}</span>
+                      </div>
+
+                      <span className="text-[11px] font-bold text-orange-400">
+                        {comp.price && comp.price > 0 ? `+ ${formatBRL(comp.price)}` : 'Grátis'}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -184,7 +242,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: pouco sal, corte em rodelas, etc."
+              placeholder="Instruções para o preparo..."
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>

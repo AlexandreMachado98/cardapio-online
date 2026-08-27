@@ -1,3 +1,9 @@
+export interface ProductComplement {
+  id?: string;
+  name: string;
+  price?: number; // 0 for free/cortesia, or extra value
+}
+
 export interface StoreSettings {
   id: string;
   name: string;
@@ -6,6 +12,7 @@ export interface StoreSettings {
   bannerUrl?: string | null;
   announcement?: string | null;
   isOpen: boolean;
+  adminPin: string;
   phone: string;
   address: string;
   pixKey?: string | null;
@@ -33,7 +40,8 @@ export interface Product {
   available: boolean;
   categoryId: string;
   category?: Category;
-  meatPoints?: string | null;
+  meatPoints?: string | null; // JSON array: ["Ao Ponto", "Bem Passado"]
+  complements?: string | null; // JSON array: [{"name": "Farofa", "price": 0}, {"name": "Vinagrete", "price": 0}]
   hasFarofa: boolean;
   hasVinagrete: boolean;
 }
@@ -46,8 +54,9 @@ export interface CartItem {
   imageUrl: string;
   quantity: number;
   meatPoint?: string;
-  farofa: boolean;
-  vinagrete: boolean;
+  selectedComplements?: string[]; // Array de nomes dos complementos escolhidos
+  farofa?: boolean;
+  vinagrete?: boolean;
   notes?: string;
 }
 
@@ -68,6 +77,7 @@ export interface OrderItemData {
   unitPrice: number;
   totalPrice: number;
   meatPoint?: string | null;
+  complements?: string | null; // JSON string or comma-separated names
   farofa: boolean;
   vinagrete: boolean;
   notes?: string | null;

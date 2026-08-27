@@ -18,6 +18,7 @@ export async function PUT(
       available,
       categoryId,
       meatPoints,
+      complements,
       hasFarofa,
       hasVinagrete,
     } = body;
@@ -34,6 +35,7 @@ export async function PUT(
         available: available !== undefined ? Boolean(available) : undefined,
         categoryId: categoryId !== undefined ? categoryId : undefined,
         meatPoints: meatPoints !== undefined ? (typeof meatPoints === 'string' ? meatPoints : JSON.stringify(meatPoints)) : undefined,
+        complements: complements !== undefined ? (typeof complements === 'string' ? complements : JSON.stringify(complements)) : undefined,
         hasFarofa: hasFarofa !== undefined ? Boolean(hasFarofa) : undefined,
         hasVinagrete: hasVinagrete !== undefined ? Boolean(hasVinagrete) : undefined,
       },

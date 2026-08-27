@@ -95,14 +95,30 @@ export default function PrintReceiptModal({ order, onClose }: PrintReceiptModalP
                   </span>
                   <span>{formatBRL(item.totalPrice)}</span>
                 </div>
-                {(item.meatPoint || item.farofa || item.vinagrete || item.notes) && (
-                  <div className="text-[10px] text-zinc-600 pl-3">
-                    {item.meatPoint && <div>• Ponto: {item.meatPoint}</div>}
-                    {item.farofa && <div>• Com Farofa</div>}
-                    {item.vinagrete && <div>• Com Vinagrete</div>}
-                    {item.notes && <div>• Obs: {item.notes}</div>}
-                  </div>
-                )}
+                {(() => {
+                  let customComps: string[] = [];
+                  if (item.complements) {
+                    try {
+                      const p = JSON.parse(item.complements);
+                      if (Array.isArray(p)) customComps = p;
+                    } catch (e) {}
+                  }
+
+                  return (
+                    <div className="text-[10px] text-zinc-600 pl-3">
+                      {item.meatPoint && <div>• Ponto: {item.meatPoint}</div>}
+                      {customComps.length > 0 ? (
+                        customComps.map((c, i) => <div key={i}>• {c}</div>)
+                      ) : (
+                        <>
+                          {item.farofa && <div>• Com Farofa</div>}
+                          {item.vinagrete && <div>• Com Vinagrete</div>}
+                        </>
+                      )}
+                      {item.notes && <div>• Obs: {item.notes}</div>}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
