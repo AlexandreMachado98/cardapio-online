@@ -43,14 +43,24 @@ export default function OrderStatusPage() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [storePhone, setStorePhone] = useState<string>('');
 
   const fetchOrder = async () => {
     try {
-      const res = await fetch(`/api/pedidos/${id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [orderRes, configRes] = await Promise.all([
+        fetch(`/api/pedidos/${id}`),
+        fetch('/api/config'),
+      ]);
+
+      if (orderRes.ok) {
+        const data = await orderRes.json();
         setOrder(data);
         setLastUpdated(new Date());
+      }
+
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        setStorePhone(configData.phone || '');
       }
     } catch (err) {
       console.error('Erro ao buscar status do pedido', err);
@@ -369,15 +379,25 @@ export default function OrderStatusPage() {
               <span>{order.addressText || 'Retirada no Balcão'}</span>
             </div>
 
-            <a
-              href={restaurantWhatsApp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full mt-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 py-2 px-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Falar com o Restaurante</span>
-            </a>
+            {(() => {
+              const targetPhone = storePhone || order.customerPhone;
+              const storeWaLink = createWhatsAppLink(
+                targetPhone,
+                `Olá! Gostaria de tirar uma dúvida sobre o meu Pedido #${order.orderNumber} em nome de ${order.customerName}.`
+              );
+
+              return (
+                <a
+                  href={storeWaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full mt-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Falar com o Restaurante no WhatsApp</span>
+                </a>
+              );
+            })()}
           </div>
         </div>
       </div>
