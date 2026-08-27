@@ -1,9 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Lock, ArrowRight, Flame, Loader2, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  ShieldAlert,
+  Lock,
+  ArrowRight,
+  Flame,
+  Loader2,
+  LogOut,
+  ShoppingBag,
+  LayoutGrid,
+  Truck,
+  Settings,
+  ExternalLink,
+  ClipboardList,
+} from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [pin, setPin] = useState('');
@@ -72,9 +88,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div>
-            <h2 className="text-xl font-black text-white">Acesso Restrito</h2>
+            <h2 className="text-xl font-black text-white">Painel da Cozinha</h2>
             <p className="text-xs text-zinc-400 mt-1">
-              Painel de Controle da Cozinha e Administração
+              Acesso exclusivo para administração e despacho
             </p>
           </div>
 
@@ -87,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                Senha / PIN da Cozinha
+                Senha de Acesso
               </label>
               <input
                 type="password"
@@ -109,30 +125,82 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <span>Entrar no Painel</span>
+                  <span>Acessar Painel</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
+
+          <Link
+            href="/"
+            className="inline-block text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            ← Voltar ao Cardápio do Cliente
+          </Link>
         </div>
       </div>
     );
   }
 
+  const navLinks = [
+    { href: '/admin', label: 'Fila de Pedidos', icon: ClipboardList },
+    { href: '/admin/produtos', label: 'Produtos & Promoções', icon: ShoppingBag },
+    { href: '/admin/categorias', label: 'Categorias', icon: LayoutGrid },
+    { href: '/admin/taxas', label: 'Taxas de Frete', icon: Truck },
+    { href: '/admin/configuracoes', label: 'Perfil da Cozinha', icon: Settings },
+  ];
+
   return (
-    <div className="relative">
-      <div className="fixed top-20 right-4 z-50">
-        <button
-          onClick={handleLogout}
-          className="bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-red-400 p-2 rounded-xl text-xs flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-colors"
-          title="Bloquear Painel"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Bloquear Painel</span>
-        </button>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Dedicated Admin Sub-Header */}
+      <div className="bg-zinc-900/90 border-b border-zinc-800 sticky top-16 z-30 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {navLinks.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
+              title="Abrir visão do cliente em nova aba"
+            >
+              <span>Ver Cardápio</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-red-400 bg-zinc-800/80 hover:bg-zinc-800 px-3 py-1.5 rounded-xl border border-zinc-700 transition-colors"
+              title="Sair e Bloquear Painel"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>Bloquear</span>
+            </button>
+          </div>
+        </div>
       </div>
-      {children}
+
+      <div className="py-2">{children}</div>
     </div>
   );
 }

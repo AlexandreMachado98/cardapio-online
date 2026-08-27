@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Flame, ShoppingBag, User, ShieldAlert, Image as ImageIcon } from 'lucide-react';
+import { Flame, ShoppingBag, User } from 'lucide-react';
 import { defaultStoreConfig } from '@/lib/config';
 
 export default function Navbar() {
@@ -16,7 +16,6 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo & Brand Name */}
         <Link href="/" className="flex items-center gap-3 group">
-          {/* Logo Area */}
           <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform overflow-hidden border border-orange-400/30">
             {defaultStoreConfig.logoUrl ? (
               <img
@@ -32,7 +31,7 @@ export default function Navbar() {
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-orange-400 transition-colors uppercase">
-                {defaultStoreConfig.name} - {defaultStoreConfig.subName}
+                {defaultStoreConfig.name} {defaultStoreConfig.subName ? `- ${defaultStoreConfig.subName}` : ''}
               </span>
               <span className="text-[10px] uppercase font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/30">
                 Online
@@ -44,25 +43,15 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Right Action Buttons */}
+        {/* Customer Only Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Admin shortcut */}
-          <Link
-            href="/admin"
-            className="hidden md:flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-orange-400 bg-zinc-800/80 hover:bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700/60 transition-all"
-            title="Painel de Controle da Cozinha"
-          >
-            <ShieldAlert className="w-4 h-4 text-orange-400" />
-            <span>Cozinha / Admin</span>
-          </Link>
-
-          {/* Profile link */}
+          {/* Profile / Orders link */}
           <Link
             href="/perfil"
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700/60 transition-all"
+            className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 px-3.5 py-2 rounded-xl border border-zinc-700/60 transition-all"
           >
             <User className="w-4 h-4 text-amber-400" />
-            <span className="hidden sm:inline">
+            <span>
               {isAuthenticated ? customer?.name.split(' ')[0] : 'Meus Pedidos'}
             </span>
           </Link>
