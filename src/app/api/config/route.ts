@@ -16,7 +16,7 @@ export async function GET() {
           logoUrl: '',
           announcement: '🔥 Espetinhos 100% artesanais assados na brasa na hora! Faça seu pedido.',
           isOpen: true,
-          adminPin: '1234',
+          adminPin: '157864',
           phone: '11987654321',
           address: 'Av. Principal dos Espetos, 500 - Centro',
           pixKey: '11987654321',
