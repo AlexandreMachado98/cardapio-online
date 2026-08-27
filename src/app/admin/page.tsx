@@ -26,7 +26,9 @@ import {
   ShoppingBag,
   LayoutGrid,
   Truck,
+  Printer,
 } from 'lucide-react';
+import PrintReceiptModal from '@/components/admin/PrintReceiptModal';
 
 const statusOptions = [
   { value: 'ALL', label: 'Todos os Pedidos' },
@@ -43,6 +45,7 @@ export default function AdminPage() {
   const [selectedFilter, setSelectedFilter] = useState('ALL');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [orderToPrint, setOrderToPrint] = useState<OrderData | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -410,6 +413,15 @@ export default function AdminPage() {
                       <span>Notificar WhatsApp</span>
                     </a>
 
+                    {/* Botão de Impressão de Comanda */}
+                    <button
+                      onClick={() => setOrderToPrint(order)}
+                      className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white p-2 rounded-xl border border-zinc-700 transition-all"
+                      title="Imprimir Comanda Térmica da Cozinha"
+                    >
+                      <Printer className="w-4 h-4 text-amber-400" />
+                    </button>
+
                     <Link
                       href={`/rastreio/${order.orderNumber}`}
                       target="_blank"
@@ -434,6 +446,12 @@ export default function AdminPage() {
           })}
         </div>
       )}
+
+      {/* Modal de Impressão de Comanda Térmica */}
+      <PrintReceiptModal
+        order={orderToPrint}
+        onClose={() => setOrderToPrint(null)}
+      />
     </div>
   );
 }

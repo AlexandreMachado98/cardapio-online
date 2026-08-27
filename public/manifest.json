@@ -1,0 +1,21 @@
+{
+  "name": "Cardápio Online - Delivery de Espetinhos",
+  "short_name": "Cardápio Delivery",
+  "description": "Cardápio digital interativo com pedidos online e rastreamento em tempo real.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=192&h=192&q=80",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=512&h=512&q=80",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

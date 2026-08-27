@@ -16,6 +16,7 @@ model StoreSettings {
   bannerUrl     String?
   announcement  String?  @default("🔥 Espetinhos 100% artesanais assados na brasa na hora! Faça seu pedido.")
   isOpen        Boolean  @default(true)
+  adminPin      String   @default("1234") // Senha de acesso ao painel admin
   phone         String   @default("11987654321")
   address       String   @default("Av. Principal dos Espetos, 500 - Centro")
   pixKey        String?  @default("11987654321")

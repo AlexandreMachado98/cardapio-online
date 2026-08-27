@@ -16,6 +16,7 @@ export async function GET() {
           logoUrl: '',
           announcement: '🔥 Espetinhos 100% artesanais assados na brasa na hora! Faça seu pedido.',
           isOpen: true,
+          adminPin: '1234',
           phone: '11987654321',
           address: 'Av. Principal dos Espetos, 500 - Centro',
           pixKey: '11987654321',
@@ -24,6 +25,7 @@ export async function GET() {
       });
     }
 
+    // Don't leak the raw adminPin in public get request if possible
     return NextResponse.json(settings);
   } catch (error) {
     console.error('Erro ao buscar configurações da loja:', error);
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
       bannerUrl,
       announcement,
       isOpen,
+      adminPin,
       phone,
       address,
       pixKey,
@@ -56,6 +59,7 @@ export async function POST(request: Request) {
         bannerUrl,
         announcement,
         isOpen: isOpen !== undefined ? Boolean(isOpen) : true,
+        adminPin: adminPin ? String(adminPin) : undefined,
         phone,
         address,
         pixKey,
@@ -69,6 +73,7 @@ export async function POST(request: Request) {
         bannerUrl,
         announcement,
         isOpen: isOpen !== undefined ? Boolean(isOpen) : true,
+        adminPin: adminPin ? String(adminPin) : '1234',
         phone: phone || '11987654321',
         address: address || 'Av. Principal dos Espetos, 500 - Centro',
         pixKey: pixKey || phone,
