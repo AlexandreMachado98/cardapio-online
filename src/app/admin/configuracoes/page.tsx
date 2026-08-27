@@ -18,6 +18,9 @@ import {
   Upload,
   Image as ImageIcon,
   Trash2,
+  Navigation,
+  Search,
+  Crosshair,
 } from 'lucide-react';
 
 export default function StoreSettingsPage() {
@@ -25,6 +28,7 @@ export default function StoreSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
 
   // Form State
   const [name, setName] = useState('Cardápio Online');
@@ -35,6 +39,8 @@ export default function StoreSettingsPage() {
   const [isOpen, setIsOpen] = useState(true);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [lat, setLat] = useState<string>('-23.5505');
+  const [lng, setLng] = useState<string>('-46.6333');
   const [pixKey, setPixKey] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('0');
 
@@ -59,6 +65,8 @@ export default function StoreSettingsPage() {
         setIsOpen(data.isOpen ?? true);
         setPhone(data.phone || '');
         setAddress(data.address || '');
+        setLat(String(data.lat || -23.5505));
+        setLng(String(data.lng || -46.6333));
         setPixKey(data.pixKey || '');
         setMinOrderValue(String(data.minOrderValue || 0));
       }
@@ -69,12 +77,11 @@ export default function StoreSettingsPage() {
     }
   };
 
-  // Image Upload Handler (Convert picked file from gallery to Base64)
+  // Image Upload Handler
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (compress if > 2MB)
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -82,7 +89,7 @@ export default function StoreSettingsPage() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDim = 400; // Optimal for circular logo
+        const maxDim = 400;
 
         if (width > height) {
           if (width > maxDim) {
@@ -109,6 +116,63 @@ export default function StoreSettingsPage() {
     reader.readAsDataURL(file);
   };
 
+  // 📍 Capture Real GPS Location from Browser/Device
+  const handleCaptureCurrentGPS = () => {
+    if (!navigator.geolocation) {
+      alert('Seu navegador não suporta geolocalização.');
+      return;
+    }
+
+    setGeocoding(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLat(String(position.coords.latitude));
+        setLng(String(position.coords.longitude));
+        setGeocoding(false);
+        setSuccess('📍 Coordenadas da Cozinha capturadas com sucesso via GPS do dispositivo!');
+        setTimeout(() => setSuccess(''), 4000);
+      },
+      (err) => {
+        setGeocoding(false);
+        alert(`Não foi possível obter a localização: ${err.message}. Digite o endereço e clique em 'Localizar no Mapa'.`);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  // 🔍 Geocode Address using OpenStreetMap Nominatim (100% Free, No API Key)
+  const handleGeocodeAddress = async () => {
+    if (!address.trim()) {
+      alert('Por favor, digite o endereço da sua cozinha primeiro.');
+      return;
+    }
+
+    setGeocoding(true);
+    try {
+      const query = encodeURIComponent(address.trim() + ', Brasil');
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`
+      );
+
+      if (res.ok) {
+        const results = await res.json();
+        if (results.length > 0) {
+          setLat(String(results[0].lat));
+          setLng(String(results[0].lon));
+          setSuccess(`📍 Endereço localizado no mapa com sucesso! (${results[0].display_name})`);
+          setTimeout(() => setSuccess(''), 5000);
+        } else {
+          alert('Endereço não encontrado com precisão. Tente adicionar a Cidade e Estado ou use o botão "Capturar meu GPS".');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao consultar endereço. Use o botão "Capturar meu GPS".');
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -127,13 +191,15 @@ export default function StoreSettingsPage() {
           isOpen,
           phone,
           address,
+          lat: Number(lat) || -23.5505,
+          lng: Number(lng) || -46.6333,
           pixKey,
           minOrderValue: Number(minOrderValue) || 0,
         }),
       });
 
       if (res.ok) {
-        setSuccess('Configurações salvas com sucesso! O cardápio dos clientes já foi atualizado.');
+        setSuccess('Configurações e localização da cozinha salvas com sucesso! O mapa foi atualizado.');
         setTimeout(() => setSuccess(''), 4000);
       }
     } catch (err) {
@@ -159,10 +225,10 @@ export default function StoreSettingsPage() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-2">
         <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
           <Store className="w-6 h-6 text-orange-500" />
-          Perfil & Configurações da Cozinha
+          Perfil, Localização & Configurações da Cozinha
         </h1>
         <p className="text-xs text-zinc-400">
-          Personalize a logo circular com indicador de status (verde/vermelho), nome, dados de contato e avisos.
+          Personalize a logo circular, nome do restaurante, endereço físico no mapa de rastreio e dados de pagamento.
         </p>
       </div>
 
@@ -200,7 +266,7 @@ export default function StoreSettingsPage() {
           </button>
         </div>
 
-        {/* 📸 LOGO CIRCULAR COM BORDA VERDE / VERMELHA E UPLOAD DA GALERIA */}
+        {/* 📸 LOGO CIRCULAR */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
             <ImageIcon className="w-4 h-4" />
@@ -208,7 +274,7 @@ export default function StoreSettingsPage() {
           </h3>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-zinc-950 rounded-2xl border border-zinc-800">
-            {/* Circular Logo with Glowing Status Border */}
+            {/* Circular Logo Preview */}
             <div className="relative flex-shrink-0">
               <div
                 className={`w-28 h-28 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
@@ -230,7 +296,6 @@ export default function StoreSettingsPage() {
                 )}
               </div>
 
-              {/* Status Badge Tag */}
               <div
                 className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow text-white whitespace-nowrap ${
                   isOpen
@@ -242,7 +307,7 @@ export default function StoreSettingsPage() {
               </div>
             </div>
 
-            {/* Upload Buttons & Options */}
+            {/* Upload Buttons */}
             <div className="flex-1 space-y-3 text-center sm:text-left">
               <div>
                 <h4 className="text-sm font-bold text-white">Foto da Galeria do Celular / Computador</h4>
@@ -280,6 +345,71 @@ export default function StoreSettingsPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 📍 ENDEREÇO FÍSICO & LOCALIZAÇÃO EXATA NO MAPA POR GPS */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Endereço Físico & Localização Exata da Cozinha no Mapa
+            </h3>
+            <span className="text-[11px] bg-zinc-800 text-zinc-300 px-2.5 py-0.5 rounded-full font-bold">
+              Origem das Entregas
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 mb-1">
+              Endereço Completo (Rua, Número, Bairro, Cidade - UF)
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Ex: Rua das Flores, 120, Centro, São Paulo - SP"
+                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+              />
+
+              <button
+                type="button"
+                onClick={handleGeocodeAddress}
+                disabled={geocoding}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white px-3.5 py-2.5 rounded-xl text-xs font-bold border border-zinc-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                title="Localizar endereço automaticamente no mapa"
+              >
+                <Search className="w-3.5 h-3.5 text-orange-400" />
+                <span>{geocoding ? 'Localizando...' : 'Localizar Endereço'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCaptureCurrentGPS}
+                disabled={geocoding}
+                className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                title="Capturar a localização física atual do dispositivo"
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+                <span>Capturar meu GPS</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-1.5">
+              Este endereço é o ponto de partida do mapa de rastreio ao vivo e o endereço exibido para clientes que escolherem <strong>Retirada no Balcão</strong>.
+            </p>
+          </div>
+
+          {/* Coordenadas Geográficas Salvas */}
+          <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-950 rounded-2xl border border-zinc-800 text-xs">
+            <div>
+              <span className="text-zinc-500 font-medium">Latitude da Cozinha:</span>
+              <div className="font-mono font-bold text-orange-400 mt-0.5">{lat || '-23.5505'}</div>
+            </div>
+            <div>
+              <span className="text-zinc-500 font-medium">Longitude da Cozinha:</span>
+              <div className="font-mono font-bold text-orange-400 mt-0.5">{lng || '-46.6333'}</div>
             </div>
           </div>
         </div>
@@ -349,7 +479,7 @@ export default function StoreSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1">
-                Telefone WhatsApp da Loja
+                Telefone WhatsApp Oficial da Loja
               </label>
               <input
                 type="text"
@@ -373,19 +503,6 @@ export default function StoreSettingsPage() {
               />
             </div>
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1">
-              Endereço Físico (para clientes que retirarem no balcão)
-            </label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Endereço da sua cozinha/balcão"
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
-            />
-          </div>
         </div>
 
         {/* Submit button */}
@@ -395,7 +512,7 @@ export default function StoreSettingsPage() {
           className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 disabled:opacity-50 text-white font-black py-4 px-6 rounded-2xl shadow-xl shadow-orange-950/50 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm"
         >
           <Save className="w-5 h-5" />
-          <span>{saving ? 'Salvando Configurações...' : 'Salvar Alterações do Perfil'}</span>
+          <span>{saving ? 'Salvando Configurações...' : 'Salvar Alterações do Perfil & Localização'}</span>
         </button>
       </form>
     </div>

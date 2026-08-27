@@ -41,39 +41,61 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const courierMarkerRef = useRef<any>(null);
+  const restaurantMarkerRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
 
-  // Restaurant origin point
-  const restaurantCoords: [number, number] = [-23.55052, -46.633308];
+  // Dynamic Restaurant origin point from settings
+  const [restaurantCoords, setRestaurantCoords] = useState<[number, number]>([-23.55052, -46.633308]);
+  const [storeAddress, setStoreAddress] = useState<string>('Cozinha / Restaurante');
 
   // Customer destination point
-  const targetCoords: [number, number] = [
+  const [targetCoords, setTargetCoords] = useState<[number, number]>([
     order.targetLat || -23.561684,
     order.targetLng || -46.655981,
-  ];
+  ]);
 
   // Real Courier Coordinates from Database
   const [courierPos, setCourierPos] = useState<[number, number]>([
-    order.courierLat || restaurantCoords[0],
-    order.courierLng || restaurantCoords[1],
+    order.courierLat || -23.55052,
+    order.courierLng || -46.633308,
   ]);
 
   const [hasRealGps, setHasRealGps] = useState(Boolean(order.courierLat && order.courierLng));
   const [distanceKm, setDistanceKm] = useState<number>(0);
   const [etaMinutes, setEtaMinutes] = useState<number>(10);
-  const [lastSync, setLastSync] = useState<Date>(new Date());
-  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Fetch Kitchen Coordinates on mount
+  useEffect(() => {
+    async function loadStoreLocation() {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg.lat && cfg.lng) {
+            const coords: [number, number] = [Number(cfg.lat), Number(cfg.lng)];
+            setRestaurantCoords(coords);
+            setStoreAddress(cfg.address || 'Cozinha / Restaurante');
+            if (!order.courierLat) {
+              setCourierPos(coords);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadStoreLocation();
+  }, [order.courierLat]);
 
   // Calculate real distance and realistic ETA
-  const updateDistanceAndEta = (cLat: number, cLng: number) => {
-    const dist = calculateDistanceKm(cLat, cLng, targetCoords[0], targetCoords[1]);
+  const updateDistanceAndEta = (cLat: number, cLng: number, tCoords = targetCoords) => {
+    const dist = calculateDistanceKm(cLat, cLng, tCoords[0], tCoords[1]);
     setDistanceKm(Number(dist.toFixed(1)));
-    // Estimate: average speed 30km/h in city + 2 mins buffer
     const calculatedMinutes = Math.max(2, Math.round((dist / 30) * 60) + 2);
     setEtaMinutes(calculatedMinutes);
   };
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map with direct OpenStreetMap standard tiles (Zero API key / zero query errors)
   useEffect(() => {
     async function initLeaflet() {
       if (typeof window === 'undefined' || !mapContainerRef.current) return;
@@ -94,20 +116,21 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
           attributionControl: false,
         }).setView(courierPos, 14);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Official OpenStreetMap Standard Tiles (No API key needed, zero query issues)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
         }).addTo(map);
 
-        // 1. Restaurant Marker (Origem)
+        // 1. Restaurant Marker (Origem Real da Cozinha)
         const restaurantIcon = L.divIcon({
           className: 'custom-rest-icon',
           html: `<div style="background-color: #ea580c; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 16px;">🔥</div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 18],
         });
-        L.marker(restaurantCoords, { icon: restaurantIcon })
+        restaurantMarkerRef.current = L.marker(restaurantCoords, { icon: restaurantIcon })
           .addTo(map)
-          .bindPopup('<b>Cozinha / Restaurante</b><br>Origem do Pedido');
+          .bindPopup(`<b>Cozinha</b><br>${storeAddress}`);
 
         // 2. Customer Destination Marker (Destino)
         const targetIcon = L.divIcon({
@@ -155,7 +178,17 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [restaurantCoords]);
+
+  // Update markers when restaurant coordinates load
+  useEffect(() => {
+    if (restaurantMarkerRef.current) {
+      restaurantMarkerRef.current.setLatLng(restaurantCoords);
+    }
+    if (polylineRef.current && mapInstanceRef.current) {
+      polylineRef.current.setLatLngs([restaurantCoords, courierPos, targetCoords]);
+    }
+  }, [restaurantCoords]);
 
   // REAL GPS POLLING: Fetch Motoboy Smartphone GPS every 3 seconds
   useEffect(() => {
@@ -163,7 +196,6 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
 
     const pollRealGps = async () => {
       try {
-        setIsSyncing(true);
         const res = await fetch(`/api/pedidos/${order.id}/location`);
         if (res.ok) {
           const data = await res.json();
@@ -171,7 +203,6 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
             const newPos: [number, number] = [Number(data.courierLat), Number(data.courierLng)];
             setCourierPos(newPos);
             setHasRealGps(true);
-            setLastSync(new Date());
             updateDistanceAndEta(newPos[0], newPos[1]);
 
             // Update marker on Leaflet map
@@ -185,15 +216,13 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         }
       } catch (err) {
         console.error('Erro ao sincronizar GPS real do motoboy', err);
-      } finally {
-        setIsSyncing(false);
       }
     };
 
     pollRealGps();
     const interval = setInterval(pollRealGps, 3000);
     return () => clearInterval(interval);
-  }, [order.id, order.status]);
+  }, [order.id, order.status, restaurantCoords]);
 
   const motoboyWhatsApp = order.courierPhone
     ? createWhatsAppLink(order.courierPhone, `Olá ${order.courierName || 'Entregador'}, sou o cliente do Pedido #${order.orderNumber}!`)
@@ -277,7 +306,7 @@ export default function LiveTrackerMap({ order, onRefresh }: LiveTrackerMapProps
         <div className="absolute bottom-4 left-4 z-[400] bg-zinc-900/95 backdrop-blur-md border border-zinc-700/80 rounded-2xl p-3 text-xs text-zinc-200 space-y-1.5 shadow-2xl">
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-3.5 rounded-full bg-orange-600 inline-block border-2 border-white"></span>
-            <span className="font-semibold">Cozinha / Origem</span>
+            <span className="font-semibold">Cozinha (Origem Real)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block border-2 border-white animate-pulse"></span>

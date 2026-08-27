@@ -25,6 +25,8 @@ export interface StoreSettings {
 
   phone: string;
   address: string;
+  lat?: number | null;
+  lng?: number | null;
   pixKey?: string | null;
   minOrderValue: number;
 }
