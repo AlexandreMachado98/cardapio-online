@@ -1,29 +1,33 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { StoreSettings } from '@/types';
 import {
-  ArrowLeft,
   Store,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  Flame,
-  Power,
   Phone,
   MapPin,
+  Save,
+  CheckCircle2,
+  Clock,
+  Sparkles,
   QrCode,
+  DollarSign,
+  Share2,
+  AlertCircle,
   Megaphone,
+  User,
+  Mail,
+  Lock,
+  KeyRound,
   Upload,
   Image as ImageIcon,
   Trash2,
   Navigation,
-  Search,
   Crosshair,
+  Search,
 } from 'lucide-react';
 
-export default function StoreSettingsPage() {
+export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +50,9 @@ export default function StoreSettingsPage() {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const miniMapContainerRef = useRef<HTMLDivElement>(null);
+  const miniMapInstanceRef = useRef<any>(null);
+  const miniMapMarkerRef = useRef<any>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -79,13 +86,71 @@ export default function StoreSettingsPage() {
     }
   };
 
+  // Mini Map Initializer & Updater
+  useEffect(() => {
+    if (!lat || !lng || isNaN(Number(lat)) || isNaN(Number(lng)) || !miniMapContainerRef.current) return;
+
+    let isMounted = true;
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+
+    async function updateMiniMap() {
+      const L = (await import('leaflet')).default;
+
+      if (!miniMapInstanceRef.current && miniMapContainerRef.current) {
+        const map = L.map(miniMapContainerRef.current, {
+          zoomControl: true,
+          attributionControl: false,
+        }).setView([numLat, numLng], 15);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(map);
+
+        const icon = L.divIcon({
+          className: 'kitchen-mini-icon',
+          html: `<div style="background-color: #ea580c; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 16px;">🔥</div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+
+        const marker = L.marker([numLat, numLng], { icon, draggable: true }).addTo(map);
+        marker.on('dragend', (event: any) => {
+          const newPos = event.target.getLatLng();
+          setLat(String(newPos.lat.toFixed(6)));
+          setLng(String(newPos.lng.toFixed(6)));
+        });
+
+        map.on('click', (e: any) => {
+          marker.setLatLng(e.latlng);
+          setLat(String(e.latlng.lat.toFixed(6)));
+          setLng(String(e.latlng.lng.toFixed(6)));
+        });
+
+        miniMapMarkerRef.current = marker;
+        miniMapInstanceRef.current = map;
+      } else if (miniMapInstanceRef.current && miniMapMarkerRef.current) {
+        miniMapInstanceRef.current.setView([numLat, numLng], 15);
+        miniMapMarkerRef.current.setLatLng([numLat, numLng]);
+      }
+    }
+
+    updateMiniMap();
+  }, [lat, lng]);
+
   // Image Upload Handler
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WEBP).');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
+      const base64 = event.target?.result as string;
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -93,13 +158,11 @@ export default function StoreSettingsPage() {
         let height = img.height;
         const maxDim = 400;
 
-        if (width > height) {
-          if (width > maxDim) {
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
             height = Math.round((height * maxDim) / width);
             width = maxDim;
-          }
-        } else {
-          if (height > maxDim) {
+          } else {
             width = Math.round((width * maxDim) / height);
             height = maxDim;
           }
@@ -108,44 +171,47 @@ export default function StoreSettingsPage() {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setLogoUrl(compressedDataUrl);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setLogoUrl(compressedDataUrl);
+        } else {
+          setLogoUrl(base64);
+        }
       };
-      img.src = event.target?.result as string;
+      img.src = base64;
     };
     reader.readAsDataURL(file);
   };
 
-  // 📍 Capture Real GPS Location from Browser/Device
+  // 📍 GPS Capture from device
   const handleCaptureCurrentGPS = () => {
     if (!navigator.geolocation) {
-      alert('Seu navegador não suporta geolocalização.');
+      alert('Geolocalização não é suportada neste navegador.');
       return;
     }
 
     setGeocoding(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLat(String(position.coords.latitude));
-        setLng(String(position.coords.longitude));
+        setLat(String(position.coords.latitude.toFixed(6)));
+        setLng(String(position.coords.longitude.toFixed(6)));
         setGeocoding(false);
         setSuccess('📍 Coordenadas da Cozinha capturadas com sucesso via GPS do dispositivo!');
         setTimeout(() => setSuccess(''), 4000);
       },
       (err) => {
         setGeocoding(false);
-        alert(`Não foi possível obter a localização: ${err.message}. Digite o endereço e clique em 'Localizar no Mapa'.`);
+        alert(`Não foi possível obter a localização: ${err.message}. Digite o endereço ou CEP e clique em 'Localizar Endereço'.`);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
   // 🔍 Geocode Address using server-side endpoint
   const handleGeocodeAddress = async () => {
     if (!address.trim()) {
-      alert('Por favor, digite o endereço da sua cozinha primeiro.');
+      alert('Por favor, digite o endereço ou CEP da sua cozinha primeiro.');
       return;
     }
 
@@ -156,15 +222,16 @@ export default function StoreSettingsPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.lat && data.lng) {
-          setLat(String(data.lat));
-          setLng(String(data.lng));
+          setLat(String(data.lat.toFixed(6)));
+          setLng(String(data.lng.toFixed(6)));
           setSuccess(`📍 Endereço localizado no mapa com sucesso! (${data.displayName || 'Coordenadas atualizadas'})`);
           setTimeout(() => setSuccess(''), 5000);
         } else {
-          alert('Endereço não encontrado com precisão. Tente adicionar a Cidade e Estado ou use o botão "Capturar meu GPS".');
+          alert('Endereço não localizado com precisão. Digite o CEP ou use o botão "Capturar meu GPS".');
         }
       } else {
-        alert('Endereço não encontrado no mapa. Certifique-se de incluir Nome da Rua, Bairro e Cidade, ou use o botão "Capturar meu GPS".');
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Endereço não encontrado no mapa. Digite o CEP ou use o botão "Capturar meu GPS".');
       }
     } catch (e) {
       console.error(e);
@@ -192,8 +259,8 @@ export default function StoreSettingsPage() {
           isOpen,
           phone,
           address,
-          lat: Number(lat) || -23.5505,
-          lng: Number(lng) || -46.6333,
+          lat: lat ? Number(lat) : null,
+          lng: lng ? Number(lng) : null,
           googleMapsApiKey: googleMapsApiKey.trim(),
           pixKey,
           minOrderValue: Number(minOrderValue) || 0,
@@ -214,28 +281,19 @@ export default function StoreSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Voltar ao Painel de Pedidos</span>
-        </Link>
-      </div>
-
-      {/* Header */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-2">
-        <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-          <Store className="w-6 h-6 text-orange-500" />
-          Perfil, Localização & Configurações da Cozinha
-        </h1>
-        <p className="text-xs text-zinc-400">
-          Personalize a logo circular, nome do restaurante, endereço físico no mapa de rastreio e dados de pagamento.
-        </p>
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+            <Store className="w-6 h-6 text-orange-500" />
+            <span>Perfil da Cozinha & Configurações Gerais</span>
+          </h1>
+          <p className="text-xs text-zinc-400">
+            Personalize a identidade visual, localização exata no mapa por GPS, chave PIX e funcionamento.
+          </p>
+        </div>
       </div>
 
       {success && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm rounded-2xl flex items-center gap-2 shadow-lg">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-3 text-emerald-400 text-xs font-semibold animate-in fade-in duration-200">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>{success}</span>
         </div>
@@ -243,97 +301,81 @@ export default function StoreSettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Status de Funcionamento */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <Power className="w-4 h-4 text-orange-400" />
-              Status de Funcionamento do Estabelecimento
-            </h3>
-            <p className="text-xs text-zinc-400">
-              Alterne para definir se o restaurante está aberto (borda verde) ou fechado (borda vermelha).
-            </p>
-          </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-orange-400" />
+                Status da Loja (Aberto / Fechado)
+              </h3>
+              <p className="text-xs text-zinc-400">
+                Quando a loja estiver fechada, os clientes não poderão finalizar novos pedidos no cardápio.
+              </p>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className={`px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2.5 transition-all shadow-md active:scale-95 ${
-              isOpen
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                : 'bg-red-600 hover:bg-red-500 text-white'
-            }`}
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-            <span>{isOpen ? '🟢 ABERTO (Aceitando Pedidos)' : '🔴 FECHADO NO MOMENTO'}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ${
+                isOpen ? 'bg-emerald-500' : 'bg-zinc-700'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                  isOpen ? 'translate-x-8' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* 📸 LOGO CIRCULAR */}
+        {/* LOGO DA COZINHA */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
-            <ImageIcon className="w-4 h-4" />
-            Logo da Cozinha (Moldura Circular com Status)
-          </h3>
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" />
+              Logo Oficial do Restaurante / Cozinha
+            </h3>
+            <span className="text-[11px] bg-orange-500/20 text-orange-400 px-2.5 py-0.5 rounded-full font-bold">
+              Cabeçalho do Cardápio
+            </span>
+          </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-zinc-950 rounded-2xl border border-zinc-800">
-            {/* Circular Logo Preview */}
-            <div className="relative flex-shrink-0">
-              <div
-                className={`w-28 h-28 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${
-                  isOpen
-                    ? 'border-4 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.45)]'
-                    : 'border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.45)]'
-                }`}
-              >
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-orange-500/50 bg-zinc-950 flex items-center justify-center shadow-lg">
                 {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt="Logo da Cozinha"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white">
-                    <Flame className="w-12 h-12 animate-pulse" />
-                  </div>
+                  <Store className="w-10 h-10 text-zinc-600" />
                 )}
-              </div>
-
-              <div
-                className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow text-white whitespace-nowrap ${
-                  isOpen
-                    ? 'bg-emerald-600 border-emerald-400'
-                    : 'bg-red-600 border-red-400'
-                }`}
-              >
-                {isOpen ? 'Aberto' : 'Fechado'}
               </div>
             </div>
 
-            {/* Upload Buttons */}
             <div className="flex-1 space-y-3 text-center sm:text-left">
-              <div>
-                <h4 className="text-sm font-bold text-white">Foto da Galeria do Celular / Computador</h4>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Escolha qualquer foto da sua galeria. A moldura circular e a borda colorida de status são aplicadas automaticamente.
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-white">Carregar Foto do Logotipo</h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Envie a logo da sua marca diretamente do seu dispositivo. Ela aparecerá no topo do cardápio para todos os clientes.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageFileChange}
-                  accept="image/*"
-                  className="hidden"
-                />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageFileChange}
+                className="hidden"
+              />
 
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-2 shadow transition-all active:scale-95"
+                  className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-orange-950/40 transition-all active:scale-95"
                 >
-                  <Upload className="w-4 h-4" />
-                  <span>Escolher Foto da Galeria</span>
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Escolher Foto da Galeria / Arquivos</span>
                 </button>
 
                 {logoUrl && (
@@ -365,14 +407,14 @@ export default function StoreSettingsPage() {
 
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1">
-              Endereço Completo (Rua, Número, Bairro, Cidade - UF)
+              Endereço Completo ou CEP (Rua, Número, Bairro, Cidade - UF)
             </label>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Ex: Rua das Flores, 120, Centro, São Paulo - SP"
+                placeholder="Ex: Rua das Flores, 120, Centro, SuaCidade - UF ou CEP 01310-100"
                 className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
 
@@ -391,15 +433,15 @@ export default function StoreSettingsPage() {
                 type="button"
                 onClick={handleCaptureCurrentGPS}
                 disabled={geocoding}
-                className="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
                 title="Capturar a localização física atual do dispositivo"
               >
-                <Crosshair className="w-3.5 h-3.5" />
-                <span>Capturar meu GPS</span>
+                <Crosshair className="w-4 h-4" />
+                <span>📍 Capturar meu GPS</span>
               </button>
             </div>
             <p className="text-[11px] text-zinc-500 mt-1.5">
-              Este endereço é o ponto de partida do mapa de rastreio ao vivo e o endereço exibido para clientes que escolherem <strong>Retirada no Balcão</strong>.
+              Dica: Você pode digitar o seu <strong>CEP</strong> ou o <strong>Endereço Completo</strong> e clicar em "Localizar Endereço", ou simplesmente clicar em <strong>"📍 Capturar meu GPS"</strong> enquanto estiver no seu estabelecimento.
             </p>
           </div>
 
@@ -413,7 +455,7 @@ export default function StoreSettingsPage() {
                 type="text"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
-                placeholder="-23.5505"
+                placeholder="Ex: -19.916681"
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-orange-400 font-mono font-bold mt-1 focus:outline-none focus:border-orange-500"
               />
             </div>
@@ -425,14 +467,25 @@ export default function StoreSettingsPage() {
                 type="text"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
-                placeholder="-46.6333"
+                placeholder="Ex: -43.934493"
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-orange-400 font-mono font-bold mt-1 focus:outline-none focus:border-orange-500"
               />
             </div>
           </div>
-          <p className="text-[10px] text-zinc-500">
-            Dica: Você pode clicar em <strong>"Capturar meu GPS"</strong> enquanto estiver na cozinha para preencher automaticamente, ou digitar as coordenadas da sua cidade.
-          </p>
+
+          {/* Mini Mapa Interativo da Cozinha */}
+          {lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng)) && (
+            <div className="space-y-1.5 pt-2">
+              <div className="flex items-center justify-between text-xs text-zinc-400">
+                <span className="font-semibold text-zinc-300">Visualização do Pin da Cozinha no Mapa:</span>
+                <span className="text-[10px] text-zinc-500">(Clique ou arraste o pin para ajustar a posição exata)</span>
+              </div>
+              <div
+                ref={miniMapContainerRef}
+                className="w-full h-48 rounded-2xl overflow-hidden border border-zinc-800 shadow-inner"
+              />
+            </div>
+          )}
         </div>
 
         {/* Identidade Visual & Nomes */}
@@ -485,16 +538,16 @@ export default function StoreSettingsPage() {
               type="text"
               value={announcement}
               onChange={(e) => setAnnouncement(e.target.value)}
-              placeholder="Digite um aviso especial ou promoção..."
+              placeholder="Ex: Entregas hoje até às 23:30! Espetinho em dobro na compra de combos."
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>
         </div>
 
-        {/* Contato & PIX */}
+        {/* Telefone & Pagamentos */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400">
-            Contato & Chave PIX
+            WhatsApp Oficial & Chave PIX
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
