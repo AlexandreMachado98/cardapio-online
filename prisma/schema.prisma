@@ -8,11 +8,26 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model StoreSettings {
+  id            String   @id @default("default")
+  name          String   @default("Cardápio Online")
+  subName       String   @default("Espetinho & Brasa")
+  logoUrl       String?
+  bannerUrl     String?
+  announcement  String?  @default("🔥 Espetinhos 100% artesanais assados na brasa na hora! Faça seu pedido.")
+  isOpen        Boolean  @default(true)
+  phone         String   @default("11987654321")
+  address       String   @default("Av. Principal dos Espetos, 500 - Centro")
+  pixKey        String?  @default("11987654321")
+  minOrderValue Float    @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
 model Category {
   id        String    @id @default(cuid())
   name      String
   slug      String    @unique
-  icon      String?   // Emoji or Lucide icon name
+  icon      String?   // Emoji or Lucide icon name (Flame, Crown, Sparkles, UtensilsCrossed, Beer, Gift)
   sortOrder Int       @default(0)
   active    Boolean   @default(true)
   products  Product[]
@@ -21,21 +36,22 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String
-  price       Float
-  imageUrl    String
-  badge       String?     // e.g. "Mais Pedido", "Novidade", "Promoção"
-  available   Boolean     @default(true)
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  meatPoints  String?     // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
-  hasFarofa   Boolean     @default(true)
-  hasVinagrete Boolean    @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
+  id            String      @id @default(cuid())
+  name          String
+  description   String
+  price         Float
+  originalPrice Float?      // Preço anterior riscado para promoções/descontos
+  imageUrl      String
+  badge         String?     // e.g. "Promoção", "Super Oferta", "Mais Pedido", "Chef"
+  available     Boolean     @default(true)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  meatPoints    String?     // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
+  hasFarofa     Boolean     @default(true)
+  hasVinagrete  Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
 }
 
 model Customer {

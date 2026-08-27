@@ -22,6 +22,10 @@ import {
   TrendingUp,
   SlidersHorizontal,
   Navigation,
+  Settings,
+  ShoppingBag,
+  LayoutGrid,
+  Truck,
 } from 'lucide-react';
 
 const statusOptions = [
@@ -72,7 +76,7 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         
-        // Se mudou para Saiu para Entrega, abrir automaticamente ou sugerir envio no WhatsApp
+        // Se mudou para Saiu para Entrega, abrir automaticamente no WhatsApp
         if (newStatus === 'OUT_FOR_DELIVERY' && data.whatsappLink) {
           window.open(data.whatsappLink, '_blank');
         }
@@ -96,7 +100,6 @@ export default function AdminPage() {
     );
   });
 
-  // Calculate metrics
   const totalRevenue = orders
     .filter((o) => o.status !== 'CANCELLED')
     .reduce((sum, o) => sum + o.total, 0);
@@ -106,37 +109,67 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-      {/* Admin Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-5 sm:p-6 rounded-3xl shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center border border-orange-500/30">
-            <Flame className="w-7 h-7 animate-pulse" />
+      {/* Admin Header with Management Nav */}
+      <div className="bg-zinc-900 border border-zinc-800 p-5 sm:p-6 rounded-3xl shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center border border-orange-500/30">
+              <Flame className="w-7 h-7 animate-pulse" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-white">
+                Painel da Cozinha & Gestão do Cardápio
+              </h1>
+              <p className="text-xs text-zinc-400">
+                Fila de pedidos, controle do cardápio, produtos, categorias e perfil
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white">
-              Painel de Pedidos da Cozinha
-            </h1>
-            <p className="text-xs text-zinc-400">
-              Gerencie a fila da brasa, despacho de motoboys e notificações WhatsApp
-            </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchOrders}
+              className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Atualizar Fila</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Action Management Buttons Bar */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-zinc-800">
           <Link
-            href="/admin/taxas"
-            className="text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-800 px-3.5 py-2 rounded-xl border border-zinc-700 transition-colors"
+            href="/admin/produtos"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
           >
-            Configurar Taxas de Frete
+            <ShoppingBag className="w-4 h-4 text-orange-400" />
+            <span>Produtos & Promoções</span>
           </Link>
 
-          <button
-            onClick={fetchOrders}
-            className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow"
+          <Link
+            href="/admin/categorias"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Atualizar Fila</span>
-          </button>
+            <LayoutGrid className="w-4 h-4 text-amber-400" />
+            <span>Categorias & Visibilidade</span>
+          </Link>
+
+          <Link
+            href="/admin/taxas"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
+          >
+            <Truck className="w-4 h-4 text-blue-400" />
+            <span>Taxas de Frete</span>
+          </Link>
+
+          <Link
+            href="/admin/configuracoes"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800/90 hover:bg-orange-600 px-3.5 py-2 rounded-xl border border-zinc-700 transition-all shadow-sm"
+          >
+            <Settings className="w-4 h-4 text-emerald-400" />
+            <span>Perfil da Cozinha & Logo</span>
+          </Link>
         </div>
       </div>
 
@@ -218,7 +251,7 @@ export default function AdminPage() {
       ) : filteredOrders.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-12 text-center space-y-2">
           <PackageCheck className="w-10 h-10 text-zinc-600 mx-auto" />
-          <h3 className="text-sm font-bold text-zinc-300">Nenhum pedido encontrado nesta fila</h3>
+          <h3 className="text-sm font-bold text-zinc-300">Nenhum pedido nesta fila no momento</h3>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -226,7 +259,6 @@ export default function AdminPage() {
             const statusInfo = getStatusDetails(order.status);
             const isUpdating = updatingId === order.id;
 
-            // Direct WhatsApp message link
             const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
             const trackingUrl = `${origin}/rastreio/${order.orderNumber}`;
             const msg = generateWhatsAppMessage({
@@ -375,7 +407,7 @@ export default function AdminPage() {
                       className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow transition-all"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Notificar WhatsApp (Saiu p/ Entrega)</span>
+                      <span>Notificar WhatsApp</span>
                     </a>
 
                     <Link

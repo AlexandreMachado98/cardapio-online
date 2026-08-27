@@ -1,3 +1,17 @@
+export interface StoreSettings {
+  id: string;
+  name: string;
+  subName: string;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  announcement?: string | null;
+  isOpen: boolean;
+  phone: string;
+  address: string;
+  pixKey?: string | null;
+  minOrderValue: number;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -13,18 +27,19 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number | null; // Preço original riscado para promoções
   imageUrl: string;
-  badge?: string | null;
+  badge?: string | null; // e.g. "50% OFF", "Promoção", "Mais Pedido"
   available: boolean;
   categoryId: string;
   category?: Category;
-  meatPoints?: string | null; // JSON string e.g. '["Ao Ponto", "Bem Passado"]'
+  meatPoints?: string | null;
   hasFarofa: boolean;
   hasVinagrete: boolean;
 }
 
 export interface CartItem {
-  cartItemId: string; // Unique uuid for cart item (product + customization)
+  cartItemId: string;
   productId: string;
   name: string;
   price: number;

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Product } from '@/types';
-import { Plus, Flame, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Percent } from 'lucide-react';
 import { formatBRL } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -11,6 +11,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onOpenModal }: ProductCardProps) {
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+
   return (
     <div
       onClick={() => onOpenModal(product)}
@@ -19,12 +21,20 @@ export default function ProductCard({ product, onOpenModal }: ProductCardProps) 
       {/* Left Details */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div className="space-y-1.5">
-          {product.badge && (
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider bg-orange-500/15 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3" />
-              {product.badge}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {product.badge && (
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider bg-orange-500/15 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-full">
+                <Sparkles className="w-3 h-3" />
+                {product.badge}
+              </span>
+            )}
+            {hasDiscount && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] uppercase font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full">
+                <Percent className="w-2.5 h-2.5" />
+                Oferta
+              </span>
+            )}
+          </div>
 
           <h3 className="font-bold text-sm sm:text-base text-zinc-100 group-hover:text-orange-400 transition-colors line-clamp-1">
             {product.name}
@@ -36,9 +46,16 @@ export default function ProductCard({ product, onOpenModal }: ProductCardProps) 
         </div>
 
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-zinc-800/60">
-          <span className="font-extrabold text-base sm:text-lg text-orange-400">
-            {formatBRL(product.price)}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-extrabold text-base sm:text-lg text-orange-400">
+              {formatBRL(product.price)}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs text-zinc-500 line-through">
+                {formatBRL(product.originalPrice!)}
+              </span>
+            )}
+          </div>
 
           <button
             type="button"

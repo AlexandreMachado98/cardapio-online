@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Category, Product } from '@/types';
+import { Category, Product, StoreSettings } from '@/types';
 import CategoryNav from '@/components/menu/CategoryNav';
 import ProductCard from '@/components/menu/ProductCard';
 import ProductModal from '@/components/menu/ProductModal';
-import { defaultStoreConfig } from '@/lib/config';
 import {
   Flame,
   Search,
@@ -16,22 +15,39 @@ import {
   Bike,
   Star,
   ChevronRight,
-  TrendingUp,
-  Store,
+  Megaphone,
+  AlertTriangle,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function HomePage() {
   const { setIsCartOpen, selectedZone } = useCart();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
+    fetchStoreSettings();
+  }, []);
+
+  useEffect(() => {
     fetchProducts();
   }, [searchQuery]);
+
+  const fetchStoreSettings = async () => {
+    try {
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const data = await res.json();
+        setStoreSettings(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar configs da loja', err);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -57,8 +73,28 @@ export default function HomePage() {
     return cat.id === activeCategoryId && (cat.products?.length || 0) > 0;
   });
 
+  const storeName = storeSettings?.name || 'Cardápio Online';
+  const storeSubName = storeSettings?.subName || 'Espetinho & Brasa';
+  const isOpen = storeSettings?.isOpen ?? true;
+
   return (
     <div className="min-h-screen pb-16">
+      {/* Top Announcement Bar (if configured) */}
+      {storeSettings?.announcement && (
+        <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+          <Megaphone className="w-3.5 h-3.5 animate-bounce-short flex-shrink-0" />
+          <span className="text-center">{storeSettings.announcement}</span>
+        </div>
+      )}
+
+      {/* Closed Alert Banner */}
+      {!isOpen && (
+        <div className="bg-red-600/90 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2">
+          <AlertTriangle className="w-4 h-4" />
+          <span>O restaurante está fechado no momento. Você ainda pode visualizar o cardápio.</span>
+        </div>
+      )}
+
       {/* Hero Banner */}
       <section className="relative bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-zinc-950 border-b border-zinc-800 pt-8 pb-10 px-4 overflow-hidden">
         {/* Glow effect */}
@@ -69,29 +105,32 @@ export default function HomePage() {
             <div className="space-y-3 text-center md:text-left max-w-xl">
               {/* Kitchen Logo + Badge */}
               <div className="flex items-center justify-center md:justify-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg border border-orange-400/30 overflow-hidden flex-shrink-0">
-                  {defaultStoreConfig.logoUrl ? (
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-xl border border-orange-400/30 overflow-hidden flex-shrink-0">
+                  {storeSettings?.logoUrl ? (
                     <img
-                      src={defaultStoreConfig.logoUrl}
-                      alt={defaultStoreConfig.name}
+                      src={storeSettings.logoUrl}
+                      alt={storeName}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Flame className="w-6 h-6 text-white animate-pulse" />
+                    <Flame className="w-7 h-7 text-white animate-pulse" />
                   )}
                 </div>
-                <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 px-3 py-1 rounded-full text-xs font-bold">
-                  <Flame className="w-3.5 h-3.5 text-orange-500" />
-                  <span>{defaultStoreConfig.name} - {defaultStoreConfig.subName}</span>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 px-3 py-0.5 rounded-full text-xs font-bold">
+                    <Flame className="w-3.5 h-3.5 text-orange-500" />
+                    <span>{storeName} - {storeSubName}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">Cardápio Oficial de Delivery</p>
                 </div>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                Cardápio Digital & <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Delivery em Tempo Real</span>
+                Faça seu Pedido Online com <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">Rastreio em Tempo Real</span>
               </h1>
 
               <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
-                Espetinhos suculentos na brasa, acompanhamentos especiais e bebidas trincando. Escolha suas opções favoritas, personalize seus itens e acompanhe a rota do motoboy ao vivo pelo mapa!
+                Espetinhos suculentos na brasa, guarnições da casa e bebidas geladas. Selecione seus itens e acompanhe a rota do motoboy ao vivo pelo mapa!
               </p>
 
               {/* Badges / Info */}
@@ -117,9 +156,19 @@ export default function HomePage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
                   Status da Cozinha
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Aberto Agora
+                <span
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                    isOpen
+                      ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30'
+                      : 'text-red-400 bg-red-500/15 border-red-500/30'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isOpen ? 'bg-emerald-400 animate-ping' : 'bg-red-400'
+                    }`}
+                  />
+                  {isOpen ? 'Aberto Agora' : 'Fechado'}
                 </span>
               </div>
 
