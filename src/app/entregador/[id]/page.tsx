@@ -20,6 +20,8 @@ import {
   RefreshCw,
   ShoppingBag,
   Signal,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 export default function MotoboyPage() {
@@ -32,6 +34,7 @@ export default function MotoboyPage() {
   const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [statusMsg, setStatusMsg] = useState('');
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -110,6 +113,13 @@ export default function MotoboyPage() {
     }
   };
 
+  const handleCopyAddress = () => {
+    if (!order?.addressText) return;
+    navigator.clipboard.writeText(order.addressText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   const handleMarkDelivered = async () => {
     if (!order) return;
     try {
@@ -147,14 +157,17 @@ export default function MotoboyPage() {
 
   const customerWhatsApp = createWhatsAppLink(
     order.customerPhone,
-    `Olá ${order.customerName}! Sou o entregador do Cardápio Online e estou a caminho com seu Pedido #${order.orderNumber}.`
+    `Olá ${order.customerName}! Sou o entregador e estou a caminho com seu Pedido #${order.orderNumber}.`
   );
 
+  // Use the exact address provided by the customer
+  const exactCustomerAddress = order.addressText || '';
+
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    order.addressText || 'São Paulo'
+    exactCustomerAddress
   )}`;
 
-  const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(order.addressText || 'São Paulo')}&navigate=yes`;
+  const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(exactCustomerAddress)}&navigate=yes`;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
@@ -234,22 +247,44 @@ export default function MotoboyPage() {
         )}
       </div>
 
-      {/* Customer & Address Card */}
+      {/* 🏠 ENDEREÇO REAL FORNECIDO PELO CLIENTE NO PEDIDO */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-4 shadow-xl">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5" />
-          Destino da Entrega
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5" />
+            Endereço Real do Cliente
+          </h3>
 
-        <div className="space-y-1">
+          {order.addressText && (
+            <button
+              onClick={handleCopyAddress}
+              className="text-[11px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded-lg border border-zinc-700 flex items-center gap-1 transition-colors"
+              title="Copiar endereço completo"
+            >
+              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-orange-400" />}
+              <span>{copied ? 'Copiado!' : 'Copiar Endereço'}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <div className="text-base font-extrabold text-white">{order.customerName}</div>
-          <div className="text-xs text-zinc-300 font-medium leading-relaxed bg-zinc-950 p-3 rounded-xl border border-zinc-800">
-            {order.addressText || 'Retirada no Balcão'}
+          
+          <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1 text-xs">
+            <div className="font-bold text-zinc-100 text-sm leading-snug">
+              {order.addressText || 'Retirada no Balcão'}
+            </div>
+            {order.neighborhood && (
+              <div className="text-orange-400 font-semibold">
+                Bairro: {order.neighborhood}
+              </div>
+            )}
           </div>
+
           {order.notes && (
-            <p className="text-xs text-amber-400 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 italic mt-2">
-              Obs: {order.notes}
-            </p>
+            <div className="text-xs text-amber-300 bg-amber-950/20 p-2.5 rounded-xl border border-amber-500/30 italic">
+              <strong>Observação do Cliente:</strong> {order.notes}
+            </div>
           )}
         </div>
 

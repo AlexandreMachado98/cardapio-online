@@ -45,7 +45,9 @@ export default function CheckoutModal({ onClose }: void | any) {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD' | 'CASH'>('PIX');
   const [changeFor, setChangeFor] = useState('');
 
-  const neighborhood = selectedZone?.neighborhood || 'Centro';
+  const [neighborhood, setNeighborhood] = useState(
+    customer?.neighborhood || selectedZone?.neighborhood || 'Centro'
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,8 +228,8 @@ export default function CheckoutModal({ onClose }: void | any) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
                   <label className="block text-[11px] font-medium text-zinc-400 mb-1">
                     Rua / Avenida *
                   </label>
@@ -249,22 +251,35 @@ export default function CheckoutModal({ onClose }: void | any) {
                     required
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
-                    placeholder="Nº"
+                    placeholder="Nº da casa/prédio"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                    Complemento / Ponto de Ref.
+                    Bairro de Entrega *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    placeholder="Nome do bairro"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    Complemento / Referência
                   </label>
                   <input
                     type="text"
                     value={complement}
                     onChange={(e) => setComplement(e.target.value)}
-                    placeholder="Apto, bloco, casa dos fundos..."
+                    placeholder="Apto, bloco, portão..."
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
