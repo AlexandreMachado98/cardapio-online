@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -45,7 +45,6 @@ export default function CheckoutModal({ onClose }: void | any) {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD' | 'CASH'>('PIX');
   const [changeFor, setChangeFor] = useState('');
 
-  // Auto-fill neighborhood from selectedZone if delivery
   const neighborhood = selectedZone?.neighborhood || 'Centro';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +75,6 @@ export default function CheckoutModal({ onClose }: void | any) {
     setLoading(true);
 
     try {
-      // 1. Salvar perfil no auth context / local storage
       login({
         name,
         phone: cleanPhone,
@@ -87,7 +85,6 @@ export default function CheckoutModal({ onClose }: void | any) {
         cep,
       });
 
-      // 2. Enviar pedido para a API
       const res = await fetch('/api/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,7 +113,6 @@ export default function CheckoutModal({ onClose }: void | any) {
 
       const createdOrder = await res.json();
 
-      // Confetti effect
       try {
         confetti({
           particleCount: 80,
@@ -131,7 +127,6 @@ export default function CheckoutModal({ onClose }: void | any) {
       setIsCartOpen(false);
       onClose();
 
-      // Redirecionar para a página do pedido / rastreamento
       router.push(`/pedido/${createdOrder.orderNumber}`);
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao enviar o pedido.');
@@ -188,7 +183,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: João da Silva"
+                  placeholder="Nome e Sobrenome"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -202,7 +197,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: 11987654321"
+                  placeholder="(00) 00000-0000"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -232,7 +227,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                     required
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
-                    placeholder="Ex: Rua das Palmeiras"
+                    placeholder="Nome da rua ou avenida"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
@@ -245,7 +240,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                     required
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
-                    placeholder="123"
+                    placeholder="Nº"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
@@ -260,7 +255,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                     type="text"
                     value={complement}
                     onChange={(e) => setComplement(e.target.value)}
-                    placeholder="Ex: Apto 102, Bloco B"
+                    placeholder="Apto, bloco, casa dos fundos..."
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
@@ -280,8 +275,7 @@ export default function CheckoutModal({ onClose }: void | any) {
             </div>
           ) : (
             <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 p-3 rounded-xl text-xs">
-              📍 <strong>Retirada no Balcão:</strong> Av. Principal dos Espetos, 500 - Centro.
-              Seu pedido estará pronto em aprox. 20 minutos após a confirmação.
+              📍 <strong>Retirada no Balcão:</strong> Seu pedido estará pronto em aproximadamente 20 minutos após a confirmação.
             </div>
           )}
 
@@ -343,7 +337,7 @@ export default function CheckoutModal({ onClose }: void | any) {
                   step="0.01"
                   value={changeFor}
                   onChange={(e) => setChangeFor(e.target.value)}
-                  placeholder={`Ex: ${Math.ceil(total / 10) * 10 + 10}`}
+                  placeholder="Ex: 50.00"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -359,7 +353,7 @@ export default function CheckoutModal({ onClose }: void | any) {
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Tocar o interfone 42, deixar na portaria..."
+              placeholder="Instruções para o entregador ou cozinha..."
               className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>

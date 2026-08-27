@@ -40,8 +40,8 @@ export default function PrintReceiptModal({ order, onClose }: PrintReceiptModalP
         >
           {/* Header */}
           <div className="text-center border-b border-dashed border-zinc-400 pb-2 space-y-0.5">
-            <div className="font-black text-sm uppercase">SABOR & ESPETO</div>
-            <div className="text-[10px] text-zinc-600">PEDIDO DE DELIVERY & BALCÃO</div>
+            <div className="font-black text-sm uppercase">COMANDA DE PEDIDO</div>
+            <div className="text-[10px] text-zinc-600">DELIVERY & BALCÃO</div>
             <div className="text-base font-black pt-1">
               *** PEDIDO #{order.orderNumber} ***
             </div>

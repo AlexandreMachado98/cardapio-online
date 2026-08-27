@@ -128,7 +128,7 @@ export default function PerfilPage() {
                   type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  placeholder="Ex: Carlos Silva"
+                  placeholder="Nome e Sobrenome"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -142,7 +142,7 @@ export default function PerfilPage() {
                   required
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="Ex: 11987654321"
+                  placeholder="(00) 00000-0000"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>

@@ -419,7 +419,7 @@ export default function AdminProdutosPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Espetinho de Picanha Grill"
+                  placeholder="Nome do produto ou espeto"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -449,7 +449,7 @@ export default function AdminProdutosPage() {
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Picanha nobre em cubos com sal grosso e chimichurri artesanal..."
+                  placeholder="Descrição dos ingredientes, corte da carne, peso..."
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
@@ -466,21 +466,21 @@ export default function AdminProdutosPage() {
                     required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="14.90"
+                    placeholder="0.00"
                     className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500 font-bold"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">
-                    Preço Original / De (R$) (Riscado)
+                    Preço Original (Riscado para Promoção)
                   </label>
                   <input
                     type="number"
                     step="0.10"
                     value={originalPrice}
                     onChange={(e) => setOriginalPrice(e.target.value)}
-                    placeholder="Ex: 19.90"
+                    placeholder="0.00"
                     className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>
@@ -496,7 +496,7 @@ export default function AdminProdutosPage() {
                     type="text"
                     value={badge}
                     onChange={(e) => setBadge(e.target.value)}
-                    placeholder="Ex: 30% OFF, Mais Pedido, Oferta"
+                    placeholder="Ex: 30% OFF, Oferta, Destaque"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
                   />
                 </div>

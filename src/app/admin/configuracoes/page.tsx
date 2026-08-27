@@ -9,7 +9,6 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Image as ImageIcon,
   Flame,
   Power,
   Phone,
@@ -26,7 +25,7 @@ export default function StoreSettingsPage() {
 
   // Form State
   const [name, setName] = useState('Cardápio Online');
-  const [subName, setSubName] = useState('Espetinho & Brasa');
+  const [subName, setSubName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [announcement, setAnnouncement] = useState('');
@@ -48,7 +47,7 @@ export default function StoreSettingsPage() {
         const data = await res.json();
         setSettings(data);
         setName(data.name || 'Cardápio Online');
-        setSubName(data.subName || 'Espetinho & Brasa');
+        setSubName(data.subName || '');
         setLogoUrl(data.logoUrl || '');
         setBannerUrl(data.bannerUrl || '');
         setAnnouncement(data.announcement || '');
@@ -171,21 +170,20 @@ export default function StoreSettingsPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Cardápio Online"
+                placeholder="Cardápio Online"
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1">
-                Nome do Estabelecimento / Usuário *
+                Nome do Estabelecimento / Usuário
               </label>
               <input
                 type="text"
-                required
                 value={subName}
                 onChange={(e) => setSubName(e.target.value)}
-                placeholder="Ex: Espetinho do Chefe"
+                placeholder="Nome do seu restaurante ou cozinha"
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
             </div>
@@ -201,7 +199,7 @@ export default function StoreSettingsPage() {
                 type="url"
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="Ex: https://i.imgur.com/sua-logo.png"
+                placeholder="https://..."
                 className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
               <div className="w-12 h-12 rounded-xl bg-zinc-950 border border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -213,7 +211,7 @@ export default function StoreSettingsPage() {
               </div>
             </div>
             <p className="text-[11px] text-zinc-500">
-              Dica: Você pode hospedar sua logo em sites gratuitos como Imgur ou Postimages e colar o link direto aqui.
+              Dica: Você pode hospedar sua logo em sites como Imgur, Postimages ou Google Drive e colar o link direto aqui.
             </p>
           </div>
         </div>
@@ -222,18 +220,18 @@ export default function StoreSettingsPage() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
             <Megaphone className="w-4 h-4" />
-            Aviso de Destaque / Promoção do Dia no Topo
+            Aviso de Destaque / Promoção no Topo
           </h3>
 
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1">
-              Texto em Destaque exibido para todos os clientes
+              Texto em Destaque exibido no topo do cardápio
             </label>
             <input
               type="text"
               value={announcement}
               onChange={(e) => setAnnouncement(e.target.value)}
-              placeholder="Ex: 🔥 Promoção de Quinta: Na compra de 5 espetinhos ganhe 1 refrigerante lata!"
+              placeholder="Digite um aviso especial ou promoção..."
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>
@@ -254,7 +252,7 @@ export default function StoreSettingsPage() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="11987654321"
+                placeholder="(00) 00000-0000"
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
             </div>
@@ -267,7 +265,7 @@ export default function StoreSettingsPage() {
                 type="text"
                 value={pixKey}
                 onChange={(e) => setPixKey(e.target.value)}
-                placeholder="Ex: 11987654321 ou seu@email.com"
+                placeholder="Telefone, e-mail, CPF/CNPJ ou chave aleatória"
                 className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
               />
             </div>
@@ -275,13 +273,13 @@ export default function StoreSettingsPage() {
 
           <div>
             <label className="block text-xs font-medium text-zinc-300 mb-1">
-              Endereço Físico do Restaurante (para retiradas no balcão)
+              Endereço Físico (para clientes que retirarem no balcão)
             </label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Ex: Av. Principal dos Espetos, 500 - Centro"
+              placeholder="Endereço da sua cozinha/balcão"
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>

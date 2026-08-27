@@ -107,7 +107,7 @@ export default function TaxasPage() {
               required
               value={neighborhood}
               onChange={(e) => setNeighborhood(e.target.value)}
-              placeholder="Ex: Jardim Paulista"
+              placeholder="Nome do bairro atendido"
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>
@@ -122,7 +122,7 @@ export default function TaxasPage() {
               required
               value={fee}
               onChange={(e) => setFee(e.target.value)}
-              placeholder="Ex: 7.00"
+              placeholder="0.00"
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>
@@ -135,7 +135,7 @@ export default function TaxasPage() {
               type="number"
               value={estimatedMinutes}
               onChange={(e) => setEstimatedMinutes(e.target.value)}
-              placeholder="35"
+              placeholder="Ex: 30"
               className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
             />
           </div>
