@@ -19,6 +19,7 @@ import {
   MessageCircle,
   RefreshCw,
   ShoppingBag,
+  Signal,
 } from 'lucide-react';
 
 export default function MotoboyPage() {
@@ -30,6 +31,7 @@ export default function MotoboyPage() {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [statusMsg, setStatusMsg] = useState('');
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   const fetchOrder = async () => {
     try {
@@ -52,16 +54,19 @@ export default function MotoboyPage() {
     fetchOrder();
   }, [id]);
 
-  // Handle Real Device Geolocation Watch
+  // Handle Real Smartphone Geolocation Watch
   useEffect(() => {
     let watchId: number;
 
-    if (isBroadcasting && navigator.geolocation && order) {
+    if (isBroadcasting && typeof window !== 'undefined' && navigator.geolocation && order) {
       watchId = navigator.geolocation.watchPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+          const accuracy = Math.round(position.coords.accuracy);
+
           setLastCoords({ lat, lng });
+          setGpsAccuracy(accuracy);
 
           try {
             await fetch(`/api/pedidos/${order.id}/location`, {
@@ -69,16 +74,20 @@ export default function MotoboyPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ lat, lng }),
             });
-            setStatusMsg('GPS transmitindo em tempo real!');
+            setStatusMsg(`📡 GPS ativo: Transmitindo posição ao vivo (Precisão: ~${accuracy}m)`);
           } catch (e) {
             console.error('Erro ao transmitir GPS', e);
           }
         },
         (err) => {
-          setStatusMsg(`Erro no GPS: ${err.message}`);
+          setStatusMsg(`Erro ao acessar GPS do celular: ${err.message}. Verifique as permissões de localização.`);
           setIsBroadcasting(false);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 1000,
+        }
       );
     }
 
@@ -86,6 +95,20 @@ export default function MotoboyPage() {
       if (watchId) navigator.geolocation.clearWatch(watchId);
     };
   }, [isBroadcasting, order?.id]);
+
+  const handleToggleBroadcast = () => {
+    if (!isBroadcasting) {
+      if (!navigator.geolocation) {
+        alert('Seu navegador ou celular não possui suporte a GPS.');
+        return;
+      }
+      setIsBroadcasting(true);
+      setStatusMsg('Iniciando rastreamento GPS por satélite...');
+    } else {
+      setIsBroadcasting(false);
+      setStatusMsg('Transmissão de GPS pausada.');
+    }
+  };
 
   const handleMarkDelivered = async () => {
     if (!order) return;
@@ -96,6 +119,7 @@ export default function MotoboyPage() {
         body: JSON.stringify({ status: 'DELIVERED' }),
       });
       if (res.ok) {
+        setIsBroadcasting(false);
         fetchOrder();
         setStatusMsg('✅ Pedido marcado como Entregue com sucesso!');
       }
@@ -108,7 +132,7 @@ export default function MotoboyPage() {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
         <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-zinc-400">Carregando dados da rota do motoboy...</p>
+        <p className="text-xs text-zinc-400">Carregando painel do entregador...</p>
       </div>
     );
   }
@@ -123,12 +147,14 @@ export default function MotoboyPage() {
 
   const customerWhatsApp = createWhatsAppLink(
     order.customerPhone,
-    `Olá ${order.customerName}! Sou o entregador do Sabor & Espeto e já estou chegando com o Pedido #${order.orderNumber}.`
+    `Olá ${order.customerName}! Sou o entregador do Cardápio Online e estou a caminho com seu Pedido #${order.orderNumber}.`
   );
 
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     order.addressText || 'São Paulo'
   )}`;
+
+  const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(order.addressText || 'São Paulo')}&navigate=yes`;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
@@ -140,7 +166,7 @@ export default function MotoboyPage() {
           </div>
           <div>
             <span className="text-xs uppercase font-bold tracking-wider opacity-90">
-              Painel do Entregador
+              Painel do Motoboy
             </span>
             <h1 className="text-xl font-black">Pedido #{order.orderNumber}</h1>
           </div>
@@ -148,19 +174,65 @@ export default function MotoboyPage() {
 
         <Link
           href={`/rastreio/${order.orderNumber}`}
-          className="text-xs bg-black/30 hover:bg-black/40 px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-1 transition-all"
+          target="_blank"
+          className="text-xs bg-black/30 hover:bg-black/40 px-3.5 py-2 rounded-xl border border-white/20 flex items-center gap-1.5 font-bold transition-all"
         >
-          <Navigation className="w-3.5 h-3.5" />
+          <Navigation className="w-4 h-4" />
           <span>Ver Mapa</span>
         </Link>
       </div>
 
       {statusMsg && (
-        <div className="p-3 bg-zinc-900 border border-emerald-500/40 text-emerald-400 text-xs rounded-2xl flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+        <div className="p-3.5 bg-zinc-900 border border-emerald-500/40 text-emerald-400 text-xs rounded-2xl flex items-center gap-2 shadow-lg">
+          <Signal className="w-4 h-4 flex-shrink-0 animate-pulse" />
           <span>{statusMsg}</span>
         </div>
       )}
+
+      {/* 📡 CONTROLE DE TRANSMISSÃO DE GPS REAL DO SMARTPHONE */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+            <Signal className="w-4 h-4" />
+            Transmissão de GPS do Smartphone
+          </h3>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              isBroadcasting
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-pulse'
+                : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+            }`}
+          >
+            {isBroadcasting ? '● GPS AO VIVO' : '○ GPS Desconectado'}
+          </span>
+        </div>
+
+        <p className="text-xs text-zinc-400">
+          Ao clicar no botão abaixo, o seu celular começa a enviar suas coordenadas reais por satélite. O cliente verá a motinha se mover na rua ao vivo!
+        </p>
+
+        <button
+          onClick={handleToggleBroadcast}
+          className={`w-full py-4 px-4 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl transition-all active:scale-95 ${
+            isBroadcasting
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50'
+              : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 text-white shadow-orange-950/50'
+          }`}
+        >
+          <Share2 className="w-5 h-5" />
+          <span>
+            {isBroadcasting ? 'GPS Conectado (Transmitindo Posição)' : '🟢 Ativar GPS em Tempo Real'}
+          </span>
+        </button>
+
+        {lastCoords && (
+          <div className="text-[11px] text-zinc-400 text-center font-mono bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 flex items-center justify-around">
+            <span>Lat: {lastCoords.lat.toFixed(5)}</span>
+            <span>Lng: {lastCoords.lng.toFixed(5)}</span>
+            {gpsAccuracy && <span>Precisão: ~{gpsAccuracy}m</span>}
+          </div>
+        )}
+      </div>
 
       {/* Customer & Address Card */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-4 shadow-xl">
@@ -171,7 +243,7 @@ export default function MotoboyPage() {
 
         <div className="space-y-1">
           <div className="text-base font-extrabold text-white">{order.customerName}</div>
-          <div className="text-xs text-zinc-300 font-medium leading-relaxed">
+          <div className="text-xs text-zinc-300 font-medium leading-relaxed bg-zinc-950 p-3 rounded-xl border border-zinc-800">
             {order.addressText || 'Retirada no Balcão'}
           </div>
           {order.notes && (
@@ -181,66 +253,45 @@ export default function MotoboyPage() {
           )}
         </div>
 
-        {/* Action Buttons for Route & WhatsApp */}
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800">
+        {/* Action Buttons for Route (Waze & Google Maps) & WhatsApp */}
+        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-800">
           <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition-all"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow transition-all text-center"
           >
-            <Navigation className="w-4 h-4" />
-            <span>Abrir Rota GPS</span>
+            <Navigation className="w-3.5 h-3.5" />
+            <span>Google Maps</span>
+          </a>
+
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow transition-all text-center"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>Waze</span>
           </a>
 
           <a
             href={customerWhatsApp}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow transition-all"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow transition-all text-center"
           >
-            <MessageCircle className="w-4 h-4" />
-            <span>Zap Cliente</span>
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>WhatsApp</span>
           </a>
         </div>
-      </div>
-
-      {/* GPS Transmission Controls */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-4 shadow-xl">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400">
-          Transmissão do seu GPS ao Cliente
-        </h3>
-
-        <p className="text-xs text-zinc-400">
-          Ao ativar a transmissão, o cliente vê sua motinha se deslocando pelo mapa em tempo real no app.
-        </p>
-
-        <button
-          onClick={() => setIsBroadcasting(!isBroadcasting)}
-          className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
-            isBroadcasting
-              ? 'bg-emerald-600 text-white animate-pulse'
-              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
-          }`}
-        >
-          <Share2 className="w-4 h-4" />
-          <span>
-            {isBroadcasting ? 'GPS Ativo (Transmitindo Localização)' : 'Ativar GPS do Celular'}
-          </span>
-        </button>
-
-        {lastCoords && (
-          <div className="text-[11px] text-zinc-500 text-center font-mono">
-            Últimas coordenadas: {lastCoords.lat.toFixed(4)}, {lastCoords.lng.toFixed(4)}
-          </div>
-        )}
       </div>
 
       {/* Items Summary & Mark Delivered */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-4 shadow-xl">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
           <span>Itens do Pedido ({order.items.length})</span>
-          <span className="text-orange-400">Cobrar: {formatBRL(order.total)}</span>
+          <span className="text-orange-400 font-extrabold text-sm">Cobrar: {formatBRL(order.total)}</span>
         </div>
 
         <div className="space-y-1.5 text-xs text-zinc-300 divide-y divide-zinc-800">
@@ -262,13 +313,13 @@ export default function MotoboyPage() {
         {order.status !== 'DELIVERED' ? (
           <button
             onClick={handleMarkDelivered}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/50 transition-all active:scale-95"
           >
-            <CheckCircle2 className="w-4 h-4" />
+            <CheckCircle2 className="w-5 h-5" />
             <span>Confirmar Entrega Concluída</span>
           </button>
         ) : (
-          <div className="text-center py-2 text-emerald-400 text-xs font-bold bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+          <div className="text-center py-3 text-emerald-400 text-xs font-bold bg-emerald-500/10 rounded-xl border border-emerald-500/30">
             ✅ Pedido Entregue com Sucesso!
           </div>
         )}
