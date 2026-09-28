@@ -121,7 +121,7 @@ export default function AdminCategoriasPage() {
     setSaving(true);
     try {
       if (editingCategory) {
-        await fetch('/api/categorias', {
+        const res = await fetch('/api/categorias', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -132,9 +132,13 @@ export default function AdminCategoriasPage() {
             active,
           }),
         });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao atualizar categoria');
+        }
         setSuccess('Categoria atualizada com sucesso!');
       } else {
-        await fetch('/api/categorias', {
+        const res = await fetch('/api/categorias', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -144,14 +148,19 @@ export default function AdminCategoriasPage() {
             active,
           }),
         });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao criar categoria');
+        }
         setSuccess('Categoria criada com sucesso!');
       }
 
       setIsModalOpen(false);
       fetchCategories();
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar categoria', err);
+      alert(err.message || 'Falha ao salvar a categoria. Tente novamente.');
     } finally {
       setSaving(false);
     }

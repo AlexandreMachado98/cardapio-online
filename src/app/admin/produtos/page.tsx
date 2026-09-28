@@ -274,26 +274,35 @@ export default function AdminProdutosPage() {
       };
 
       if (editingProduct) {
-        await fetch(`/api/produtos/${editingProduct.id}`, {
+        const res = await fetch(`/api/produtos/${editingProduct.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao atualizar produto');
+        }
         setSuccess('Produto atualizado com sucesso!');
       } else {
-        await fetch('/api/produtos', {
+        const res = await fetch('/api/produtos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Erro ao criar produto');
+        }
         setSuccess('Novo produto adicionado ao cardápio!');
       }
 
       setIsModalOpen(false);
       fetchProductsAndCategories();
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar produto', err);
+      alert(err.message || 'Falha ao salvar produto. Tente novamente.');
     } finally {
       setSaving(false);
     }

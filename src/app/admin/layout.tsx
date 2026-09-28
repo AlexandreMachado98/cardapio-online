@@ -42,23 +42,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [togglingStatus, setTogglingStatus] = useState(false);
 
   useEffect(() => {
-    try {
-      const auth = localStorage.getItem('saborespeto_admin_auth');
-      if (auth === 'true') {
-        setIsAuthenticated(true);
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/admin/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setIsAuthenticated(true);
+            fetchStoreSettings();
+            return;
+          }
+        }
+        setIsAuthenticated(false);
+      } catch (e) {
+        console.error(e);
+        setIsAuthenticated(false);
+      } finally {
+        setIsChecking(false);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsChecking(false);
-    }
+    };
+    checkSession();
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchStoreSettings();
-    }
-  }, [isAuthenticated]);
 
   const fetchStoreSettings = async () => {
     try {
@@ -106,7 +110,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       if (res.ok) {
         setIsAuthenticated(true);
-        localStorage.setItem('saborespeto_admin_auth', 'true');
         fetchStoreSettings();
       } else {
         const data = await res.json();
@@ -119,9 +122,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (e) {}
     setIsAuthenticated(false);
-    localStorage.removeItem('saborespeto_admin_auth');
+    localStorage.removeItem('saborespeto_admin_auth'); // Clean up old tokens just in case
   };
 
   if (isChecking) {

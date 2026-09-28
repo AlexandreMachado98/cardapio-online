@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { signAdminToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
@@ -25,6 +27,19 @@ export async function POST(request: Request) {
     const passMatches = inputPass === validPass;
 
     if (userMatches && passMatches) {
+      // Create JWT
+      const token = await signAdminToken({ user: validUser, role: 'admin' });
+      
+      // Set HttpOnly cookie
+      const cookieStore = await cookies();
+      cookieStore.set('saborespeto_admin_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 8, // 8 hours
+      });
+
       return NextResponse.json({
         success: true,
         message: 'Login realizado com sucesso',
