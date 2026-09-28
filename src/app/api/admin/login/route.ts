@@ -21,8 +21,7 @@ export async function POST(request: Request) {
 
     const userMatches =
       inputUser === validUser.toLowerCase() ||
-      inputUser === validEmail.toLowerCase() ||
-      inputUser === 'admin';
+      inputUser === validEmail.toLowerCase();
 
     const passMatches = inputPass === validPass;
 

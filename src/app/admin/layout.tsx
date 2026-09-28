@@ -96,7 +96,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
+    if (!username.trim() || !password.trim()) {
+      setError('Informe usuário/e-mail e senha.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -112,11 +115,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsAuthenticated(true);
         fetchStoreSettings();
       } else {
-        const data = await res.json();
-        setError(data.error || 'Usuário ou senha incorretos.');
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 500) {
+          setError('Não foi possível realizar o login. Tente novamente.');
+        } else {
+          setError(data.error || 'Usuário ou senha incorretos.');
+        }
       }
     } catch (err) {
-      setError('Erro ao conectar com o servidor.');
+      setError('Não foi possível realizar o login. Tente novamente.');
     } finally {
       setLoading(false);
     }
