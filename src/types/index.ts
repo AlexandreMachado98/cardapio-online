@@ -12,6 +12,8 @@ export interface StoreSettings {
   bannerUrl?: string | null;
   announcement?: string | null;
   isOpen: boolean;
+  isMesaEnabled: boolean;
+  isDeliveryEnabled: boolean;
   adminUser?: string;
   adminEmail?: string;
   adminPassword?: string;

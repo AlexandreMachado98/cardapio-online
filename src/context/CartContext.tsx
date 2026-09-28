@@ -12,6 +12,10 @@ interface CartContextType {
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
   
+  // Modos de Atendimento (Mesa ou Delivery)
+  serviceMode: 'MESA' | 'DELIVERY' | null;
+  setServiceMode: (mode: 'MESA' | 'DELIVERY' | null) => void;
+  
   // Delivery Fee calculation
   deliveryType: 'DELIVERY' | 'PICKUP';
   setDeliveryType: (type: 'DELIVERY' | 'PICKUP') => void;
@@ -32,6 +36,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [serviceMode, setServiceMode] = useState<'MESA' | 'DELIVERY' | null>(null);
   const [deliveryType, setDeliveryType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
@@ -44,6 +49,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       const savedZone = localStorage.getItem('saborespeto_zone');
       if (savedZone) setSelectedZone(JSON.parse(savedZone));
+
+      const savedMode = localStorage.getItem('saborespeto_mode');
+      if (savedMode === 'MESA' || savedMode === 'DELIVERY') {
+        setServiceMode(savedMode as 'MESA' | 'DELIVERY');
+      }
     } catch (e) {
       console.error('Failed to load cart from localStorage', e);
     }
@@ -79,6 +89,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('saborespeto_zone', JSON.stringify(selectedZone));
     }
   }, [selectedZone]);
+
+  useEffect(() => {
+    if (serviceMode) {
+      localStorage.setItem('saborespeto_mode', serviceMode);
+    }
+  }, [serviceMode]);
 
   const addItem = (newItem: CartItem) => {
     setItems((prev) => {
@@ -139,6 +155,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         isCartOpen,
         setIsCartOpen,
+        serviceMode,
+        setServiceMode,
         deliveryType,
         setDeliveryType,
         selectedZone,

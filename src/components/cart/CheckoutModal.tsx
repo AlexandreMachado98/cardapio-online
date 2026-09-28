@@ -26,7 +26,7 @@ interface CheckoutModalProps {
 
 export default function CheckoutModal({ onClose }: void | any) {
   const router = useRouter();
-  const { items, deliveryType, selectedZone, deliveryFee, subtotal, total, clearCart, setIsCartOpen } = useCart();
+  const { items, deliveryType, selectedZone, deliveryFee, subtotal, total, clearCart, setIsCartOpen, serviceMode } = useCart();
   const { customer, login } = useAuth();
 
   const [loading, setLoading] = useState(false);
@@ -145,6 +145,66 @@ export default function CheckoutModal({ onClose }: void | any) {
       setLoading(false);
     }
   };
+
+  if (serviceMode === 'MESA') {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="p-6 border-b border-zinc-800 flex flex-col items-center justify-center bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900">
+            <h2 className="text-xl font-black text-white uppercase mb-1">Meu Pedido / Minha Escolha</h2>
+            <p className="text-sm text-zinc-400">Mostre esta tela para o garçom</p>
+          </div>
+          
+          <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto bg-zinc-950">
+            {items.map((item, index) => (
+              <div key={index} className="flex justify-between items-start border-b border-zinc-800 pb-3 last:border-0 last:pb-0">
+                <div>
+                  <div className="font-bold text-white text-base">
+                    {item.quantity}x {item.name}
+                  </div>
+                  {item.meatPoint && (
+                    <div className="text-sm text-orange-400 mt-1">Ponto: {item.meatPoint}</div>
+                  )}
+                  {item.selectedComplements && item.selectedComplements.length > 0 && (
+                    <div className="text-sm text-zinc-400 mt-1">+ {item.selectedComplements.join(', ')}</div>
+                  )}
+                  {item.notes && (
+                    <div className="text-sm text-amber-400 italic mt-1">Obs: {item.notes}</div>
+                  )}
+                </div>
+                <div className="font-bold text-orange-400 whitespace-nowrap ml-4">
+                  {formatBRL(item.price * item.quantity)}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="p-6 border-t border-zinc-800 bg-zinc-900">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-lg font-bold text-zinc-300">Total Estimado:</span>
+              <span className="text-2xl font-black text-orange-500">{formatBRL(subtotal)}</span>
+            </div>
+            <button
+              onClick={() => {
+                clearCart();
+                setIsCartOpen(false);
+                onClose();
+              }}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all"
+            >
+              Fechar e Limpar
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full mt-3 bg-transparent text-zinc-500 hover:text-zinc-300 font-bold py-2 px-4 transition-all"
+            >
+              Voltar ao cardápio
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">

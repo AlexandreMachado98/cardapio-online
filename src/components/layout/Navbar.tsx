@@ -10,7 +10,7 @@ import { StoreSettings } from '@/types';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { totalItemCount, setIsCartOpen, total } = useCart();
+  const { totalItemCount, setIsCartOpen, total, serviceMode, setServiceMode } = useCart();
   const { customer, isAuthenticated } = useAuth();
   const [storeConfig, setStoreConfig] = useState<StoreSettings | null>(null);
 
@@ -88,13 +88,30 @@ export default function Navbar() {
 
         {/* Customer Only Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* Mode Switcher */}
+          {storeConfig?.isMesaEnabled && storeConfig?.isDeliveryEnabled && serviceMode && (
+            <button
+              onClick={() => {
+                const newMode = serviceMode === 'MESA' ? 'DELIVERY' : 'MESA';
+                if (confirm(`Deseja alterar o atendimento para ${newMode}? Isso não apagará os itens do carrinho.`)) {
+                  setServiceMode(newMode);
+                }
+              }}
+              className="flex items-center gap-1.5 text-xs font-medium text-orange-200 hover:text-white bg-orange-900/40 hover:bg-orange-800/60 px-3.5 py-2 rounded-xl border border-orange-500/30 transition-all"
+            >
+              <span className="hidden sm:inline">Modo:</span>
+              <span className="font-bold">{serviceMode === 'MESA' ? '🍽️ Mesa' : '🛵 Delivery'}</span>
+            </button>
+          )}
+
           {/* Profile / Orders link */}
           <Link
             href="/perfil"
             className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 px-3.5 py-2 rounded-xl border border-zinc-700/60 transition-all"
           >
             <User className="w-4 h-4 text-amber-400" />
-            <span>
+            <span className="hidden sm:inline">
               {isAuthenticated ? customer?.name.split(' ')[0] : 'Meus Pedidos'}
             </span>
           </Link>

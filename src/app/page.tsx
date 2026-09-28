@@ -21,7 +21,7 @@ import {
 import { useCart } from '@/context/CartContext';
 
 export default function HomePage() {
-  const { setIsCartOpen, selectedZone } = useCart();
+  const { setIsCartOpen, selectedZone, serviceMode, setServiceMode } = useCart();
   const [categories, setCategories] = useState<Category[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,15 @@ export default function HomePage() {
       if (res.ok) {
         const data = await res.json();
         setStoreSettings(data);
+        
+        // Se apenas um modo estiver ativo, seleciona automaticamente (se ainda não houver seleção)
+        if (!serviceMode) {
+          if (data.isMesaEnabled && !data.isDeliveryEnabled) {
+            setServiceMode('MESA');
+          } else if (!data.isMesaEnabled && data.isDeliveryEnabled) {
+            setServiceMode('DELIVERY');
+          }
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar configs da loja', err);
@@ -76,6 +85,51 @@ export default function HomePage() {
   const storeName = storeSettings?.name || 'Cardápio Online';
   const storeSubName = storeSettings?.subName || 'Espetinho & Brasa';
   const isOpen = storeSettings?.isOpen ?? true;
+
+  // Se não carregou configs, mostra algo vazio
+  if (!storeSettings) {
+    return <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500"><Flame className="w-8 h-8 animate-pulse" /></div>;
+  }
+
+  // Tela de Seleção de Modalidade
+  if (!serviceMode && storeSettings.isMesaEnabled && storeSettings.isDeliveryEnabled) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Como você deseja ser atendido?</h1>
+          <p className="text-zinc-400 text-sm">Escolha a opção para continuar com o cardápio.</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row w-full max-w-xl gap-4">
+          <button
+            onClick={() => setServiceMode('MESA')}
+            className="flex-1 bg-zinc-900 border border-zinc-800 hover:border-orange-500 rounded-3xl p-8 flex flex-col items-center gap-4 transition-all hover:scale-105 active:scale-95"
+          >
+            <div className="w-20 h-20 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(249,115,22,0.2)]">
+              <span className="text-4xl">🍽️</span>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white uppercase">Estou na Mesa</h2>
+              <p className="text-xs text-zinc-400 leading-relaxed">Quero visualizar o cardápio para consumir no estabelecimento.</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setServiceMode('DELIVERY')}
+            className="flex-1 bg-zinc-900 border border-zinc-800 hover:border-emerald-500 rounded-3xl p-8 flex flex-col items-center gap-4 transition-all hover:scale-105 active:scale-95"
+          >
+            <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+              <span className="text-4xl">🛵</span>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white uppercase">Delivery</h2>
+              <p className="text-xs text-zinc-400 leading-relaxed">Quero fazer meu pedido para entrega em casa.</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16">

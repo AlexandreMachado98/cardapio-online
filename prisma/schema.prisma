@@ -16,6 +16,8 @@ model StoreSettings {
   bannerUrl             String?
   announcement          String?  @default("")
   isOpen                Boolean  @default(true)
+  isMesaEnabled         Boolean  @default(true)
+  isDeliveryEnabled     Boolean  @default(true)
   
   // Autenticação do Administrador
   adminUser             String   @default("admin")

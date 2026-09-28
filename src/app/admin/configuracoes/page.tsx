@@ -25,7 +25,9 @@ import {
   Navigation,
   Crosshair,
   Search,
+  Download,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -41,6 +43,8 @@ export default function AdminSettingsPage() {
   const [bannerUrl, setBannerUrl] = useState('');
   const [announcement, setAnnouncement] = useState('');
   const [isOpen, setIsOpen] = useState(true);
+  const [isMesaEnabled, setIsMesaEnabled] = useState(true);
+  const [isDeliveryEnabled, setIsDeliveryEnabled] = useState(true);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [lat, setLat] = useState<string>('');
@@ -71,6 +75,8 @@ export default function AdminSettingsPage() {
         setBannerUrl(data.bannerUrl || '');
         setAnnouncement(data.announcement || '');
         setIsOpen(data.isOpen ?? true);
+        setIsMesaEnabled(data.isMesaEnabled ?? true);
+        setIsDeliveryEnabled(data.isDeliveryEnabled ?? true);
         setPhone(data.phone || '');
         setAddress(data.address || '');
         setLat(data.lat !== null && data.lat !== undefined ? String(data.lat) : '');
@@ -257,6 +263,8 @@ export default function AdminSettingsPage() {
           bannerUrl,
           announcement,
           isOpen,
+          isMesaEnabled,
+          isDeliveryEnabled,
           phone,
           address,
           lat: lat ? Number(lat) : null,
@@ -326,6 +334,134 @@ export default function AdminSettingsPage() {
                 }`}
               />
             </button>
+          </div>
+        </div>
+
+        {/* FORMAS DE ATENDIMENTO */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+            <Store className="w-4 h-4" />
+            Formas de Atendimento
+          </h3>
+          <p className="text-xs text-zinc-400 mb-4">
+            Quais modalidades de atendimento o seu estabelecimento oferece no momento?
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Modo Mesa */}
+            <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Atendimento na Mesa</h4>
+                <p className="text-[10px] text-zinc-500">Cliente visualiza o cardápio no estabelecimento.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMesaEnabled(!isMesaEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  isMesaEnabled ? 'bg-orange-500' : 'bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isMesaEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Modo Delivery */}
+            <div className="flex items-center justify-between bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Delivery</h4>
+                <p className="text-[10px] text-zinc-500">Cliente faz pedido com entrega em casa.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeliveryEnabled(!isDeliveryEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  isDeliveryEnabled ? 'bg-orange-500' : 'bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isDeliveryEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* QR CODE DO CARDÁPIO */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+            <QrCode className="w-4 h-4" />
+            QR Code do Cardápio
+          </h3>
+          <p className="text-xs text-zinc-400">
+            Escaneie ou imprima este QR Code para que seus clientes acessem seu cardápio instantaneamente. O link é gerado automaticamente baseado no endereço atual deste site.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center gap-6 mt-4 p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+            <div className="bg-white p-4 rounded-xl shadow-inner flex items-center justify-center">
+              {typeof window !== 'undefined' && (
+                <QRCodeSVG
+                  id="qr-code-svg"
+                  value={window.location.origin}
+                  size={150}
+                  level="H"
+                  includeMargin={false}
+                />
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-3 w-full sm:w-auto flex-1">
+              <div className="text-xs text-zinc-300 bg-zinc-900 p-3 rounded-lg border border-zinc-800 font-mono break-all">
+                {typeof window !== 'undefined' ? window.location.origin : 'Carregando URL...'}
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const svg = document.getElementById('qr-code-svg');
+                    if (!svg) return;
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      ctx?.drawImage(img, 0, 0);
+                      const pngFile = canvas.toDataURL('image/png');
+                      const downloadLink = document.createElement('a');
+                      downloadLink.download = 'qrcode-cardapio.png';
+                      downloadLink.href = `${pngFile}`;
+                      downloadLink.click();
+                    };
+                    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                  }}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar PNG
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(window.location.origin);
+                      alert('Link copiado para a área de transferência!');
+                    }
+                  }}
+                  className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Copiar Link
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

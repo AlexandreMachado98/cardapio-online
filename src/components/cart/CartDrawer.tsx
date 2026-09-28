@@ -19,6 +19,7 @@ export default function CartDrawer() {
     deliveryFee,
     total,
     deliveryType,
+    serviceMode,
   } = useCart();
 
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -160,7 +161,7 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Consulta de Taxa de Entrega */}
-                  <DeliveryFeeCalculator />
+                  {serviceMode !== 'MESA' && <DeliveryFeeCalculator />}
                 </>
               )}
             </div>
@@ -173,19 +174,21 @@ export default function CartDrawer() {
                     <span>Subtotal</span>
                     <span className="font-semibold text-zinc-200">{formatBRL(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Taxa de Entrega ({deliveryType === 'DELIVERY' ? 'Delivery' : 'Retirada'})</span>
-                    <span className="font-semibold text-zinc-200">
-                      {deliveryType === 'DELIVERY'
-                        ? deliveryFee > 0
-                          ? formatBRL(deliveryFee)
-                          : 'Selecione o bairro'
-                        : 'Grátis'}
-                    </span>
-                  </div>
+                  {serviceMode !== 'MESA' && (
+                    <div className="flex justify-between">
+                      <span>Taxa de Entrega ({deliveryType === 'DELIVERY' ? 'Delivery' : 'Retirada'})</span>
+                      <span className="font-semibold text-zinc-200">
+                        {deliveryType === 'DELIVERY'
+                          ? deliveryFee > 0
+                            ? formatBRL(deliveryFee)
+                            : 'Selecione o bairro'
+                          : 'Grátis'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-extrabold text-white pt-2 border-t border-zinc-800">
-                    <span>Total do Pedido</span>
-                    <span className="text-orange-400 text-base">{formatBRL(total)}</span>
+                    <span>{serviceMode === 'MESA' ? 'Total Estimado' : 'Total do Pedido'}</span>
+                    <span className="text-orange-400 text-base">{formatBRL(serviceMode === 'MESA' ? subtotal : total)}</span>
                   </div>
                 </div>
 
@@ -193,7 +196,7 @@ export default function CartDrawer() {
                   onClick={() => setIsCheckoutOpen(true)}
                   className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <span>Avançar para Checkout</span>
+                  <span>{serviceMode === 'MESA' ? 'Mostrar pedido ao Garçom' : 'Avançar para Checkout'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
