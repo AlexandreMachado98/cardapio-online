@@ -112,7 +112,7 @@ export interface OrderData {
   total: number;
   paymentMethod: 'PIX' | 'CARD' | 'CASH';
   changeFor?: number | null;
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'IN_SERVICE' | 'CLOSED';
   notes?: string | null;
   
   // Courier Info
