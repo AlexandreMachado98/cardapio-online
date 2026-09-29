@@ -645,7 +645,7 @@ export default function AdminOrdersPage() {
                 const isUpdating = updatingId === order.id;
 
                 const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-                const trackingUrl = `${origin}/rastreio/${order.orderNumber}`;
+                const trackingUrl = `${origin}/acompanhar/${order.trackingToken || order.orderNumber}`;
                 const msg = generateWhatsAppMessage({
                   orderNumber: order.orderNumber,
                   customerName: order.customerName,

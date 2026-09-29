@@ -6,18 +6,25 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawId = (await params).id;
+    const cleanId = rawId ? decodeURIComponent(rawId).trim().replace(/^#/, '') : '';
+
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+      return NextResponse.json({ error: 'Identificador inválido' }, { status: 400 });
+    }
 
     const order = await prisma.order.findFirst({
       where: {
         OR: [
-          { id },
-          { orderNumber: !isNaN(Number(id)) ? Number(id) : -1 },
+          { trackingToken: cleanId },
+          { id: cleanId },
+          { orderNumber: !isNaN(Number(cleanId)) ? Number(cleanId) : -1 },
         ],
       },
       select: {
         id: true,
         orderNumber: true,
+        trackingToken: true,
         status: true,
         courierName: true,
         courierPhone: true,
@@ -47,15 +54,22 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawId = (await params).id;
+    const cleanId = rawId ? decodeURIComponent(rawId).trim().replace(/^#/, '') : '';
+
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+      return NextResponse.json({ error: 'Identificador inválido' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { lat, lng } = body;
 
     const existingOrder = await prisma.order.findFirst({
       where: {
         OR: [
-          { id },
-          { orderNumber: !isNaN(Number(id)) ? Number(id) : -1 },
+          { trackingToken: cleanId },
+          { id: cleanId },
+          { orderNumber: !isNaN(Number(cleanId)) ? Number(cleanId) : -1 },
         ],
       },
     });

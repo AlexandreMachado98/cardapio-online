@@ -285,11 +285,38 @@ export default function OrderStatusPage() {
             </div>
 
             <Link
-              href={`/rastreio/${order.orderNumber}`}
+              href={`/acompanhar/${order.trackingToken || order.orderNumber}`}
               className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-950/50 hover:scale-105 transition-all flex-shrink-0"
             >
               <Navigation className="w-4 h-4" />
               <span>Ver Rastreio no Mapa</span>
+            </Link>
+          </div>
+        )}
+
+        {/* Tracking button available in preparation stages */}
+        {order.deliveryType === 'DELIVERY' && !isOutForDelivery && !isDelivered && (
+          <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="w-10 h-10 rounded-xl bg-orange-600/20 text-orange-400 flex items-center justify-center flex-shrink-0">
+                <Bike className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">
+                  Acompanhamento de Entrega & Rastreio
+                </h4>
+                <p className="text-xs text-zinc-400">
+                  Veja a estimativa de entrega e o status da cozinha em tempo real.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/acompanhar/${order.trackingToken || order.orderNumber}`}
+              className="w-full sm:w-auto bg-orange-600 hover:bg-orange-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all flex-shrink-0"
+            >
+              <Navigation className="w-4 h-4" />
+              <span>Acompanhar Pedido</span>
             </Link>
           </div>
         )}

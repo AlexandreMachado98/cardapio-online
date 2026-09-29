@@ -138,7 +138,16 @@ export default function CheckoutModal({ onClose }: void | any) {
       setIsCartOpen(false);
       onClose();
 
-      router.push(`/pedido/${createdOrder.orderNumber}`);
+      const trackingId = createdOrder.trackingToken || createdOrder.orderNumber;
+      if (!trackingId) {
+        throw new Error('Não foi possível identificar o pedido criado.');
+      }
+
+      if (deliveryType === 'DELIVERY') {
+        router.push(`/acompanhar/${trackingId}`);
+      } else {
+        router.push(`/pedido/${createdOrder.orderNumber}`);
+      }
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao enviar o pedido.');
     } finally {

@@ -32,6 +32,10 @@ export interface StoreSettings {
   googleMapsApiKey?: string | null;
   pixKey?: string | null;
   minOrderValue: number;
+  waApiToken?: string | null;
+  waPhoneNumberId?: string | null;
+  waNotifyCreated?: boolean;
+  waNotifyDispatched?: boolean;
 }
 
 export interface Category {
@@ -101,10 +105,12 @@ export interface OrderItemData {
 export interface OrderData {
   id: string;
   orderNumber: number;
+  trackingToken?: string | null;
   customerId?: string | null;
   customerName: string;
   customerPhone: string;
   deliveryType: 'DELIVERY' | 'PICKUP' | 'TABLE';
+  tableNumber?: string | null;
   addressText?: string | null;
   neighborhood?: string | null;
   deliveryFee: number;

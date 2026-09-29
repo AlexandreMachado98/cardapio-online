@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/pedido/:id/acompanhar',
+        destination: '/acompanhar/:id',
+      },
+      {
+        source: '/tracking/:id',
+        destination: '/acompanhar/:id',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

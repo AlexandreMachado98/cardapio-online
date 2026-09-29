@@ -6,13 +6,22 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawId = (await params).id;
+    const cleanId = rawId ? decodeURIComponent(rawId).trim().replace(/^#/, '') : '';
+
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+      console.warn(`[TRACKING_LOOKUP_EMPTY] Identificador recebido inválido ou vazio: "${rawId}"`);
+      return NextResponse.json({ error: 'Identificador do pedido inválido.' }, { status: 400 });
+    }
+
+    console.log(`[TRACKING_LOOKUP_STARTED] Buscando pedido com identificador: "${cleanId}"`);
 
     const order = await prisma.order.findFirst({
       where: {
         OR: [
-          { id },
-          { orderNumber: !isNaN(Number(id)) ? Number(id) : -1 },
+          { trackingToken: cleanId },
+          { id: cleanId },
+          { orderNumber: !isNaN(Number(cleanId)) ? Number(cleanId) : -1 },
         ],
       },
       include: {
@@ -21,12 +30,14 @@ export async function GET(
     });
 
     if (!order) {
+      console.warn(`[TRACKING_LOOKUP_EMPTY] Pedido não encontrado para identificador: "${cleanId}"`);
       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
     }
 
+    console.log(`[TRACKING_LOOKUP_SUCCESS] Pedido #${order.orderNumber} localizado com sucesso (Status: ${order.status})`);
     return NextResponse.json(order);
   } catch (error) {
-    console.error('Erro ao buscar pedido:', error);
+    console.error('[TRACKING_LOOKUP_ERROR] Erro ao buscar pedido:', error);
     return NextResponse.json({ error: 'Erro ao buscar pedido' }, { status: 500 });
   }
 }
@@ -36,15 +47,22 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawId = (await params).id;
+    const cleanId = rawId ? decodeURIComponent(rawId).trim().replace(/^#/, '') : '';
+
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+      return NextResponse.json({ error: 'Identificador do pedido inválido.' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { courierName, courierPhone, courierVehicle, courierPlate, status, notes } = body;
 
     const order = await prisma.order.findFirst({
       where: {
         OR: [
-          { id },
-          { orderNumber: !isNaN(Number(id)) ? Number(id) : -1 },
+          { trackingToken: cleanId },
+          { id: cleanId },
+          { orderNumber: !isNaN(Number(cleanId)) ? Number(cleanId) : -1 },
         ],
       },
     });

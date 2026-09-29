@@ -4,7 +4,7 @@ import React from 'react';
 import { useParams } from 'next/navigation';
 import TrackingView from '@/components/tracking/TrackingView';
 
-export default function RastreioPage() {
+export default function AcompanharPage() {
   const params = useParams();
   const id = params?.id as string;
 

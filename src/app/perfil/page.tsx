@@ -250,7 +250,7 @@ export default function PerfilPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => handleRepeatOrder(order)}
                         className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-semibold border border-zinc-700 transition-colors"
@@ -259,11 +259,21 @@ export default function PerfilPage() {
                         <span>Pedir Novamente</span>
                       </button>
 
+                      {order.deliveryType === 'DELIVERY' && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                        <Link
+                          href={`/acompanhar/${order.trackingToken || order.orderNumber}`}
+                          className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow transition-colors"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Acompanhar Entrega</span>
+                        </Link>
+                      )}
+
                       <Link
                         href={`/pedido/${order.orderNumber}`}
-                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow transition-colors"
+                        className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold border border-zinc-700 transition-colors"
                       >
-                        <span>Ver Detalhes / Recibo</span>
+                        <span>Recibo</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>

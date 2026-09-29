@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { generateOrderConfirmationWhatsAppMessage } from '@/lib/whatsapp';
+import { generateOrderConfirmationWhatsAppMessage, createWhatsAppLink } from '@/lib/whatsapp';
 import { sendWhatsAppNotification } from '@/lib/notificationService';
 
 // Helper to resolve customer address to real lat/lng near the store
@@ -171,9 +172,11 @@ export async function POST(request: Request) {
     const orderNumber = lastOrder ? lastOrder.orderNumber + 1 : 1001;
 
     // 5. Criar o pedido com itens e coordenadas vinculadas à loja real
+    const trackingToken = randomUUID();
     const order = await prisma.order.create({
       data: {
         orderNumber,
+        trackingToken,
         customerId: customer.id,
         customerName,
         customerPhone: cleanPhone,
@@ -216,9 +219,11 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log(`[ORDER_CREATED] Pedido #${order.orderNumber} criado com sucesso. ID: ${order.id} | Token: ${order.trackingToken}`);
+
     // 6. Gerar mensagem e link do WhatsApp para envio imediato
     const origin = request.headers.get('origin') || 'http://localhost:3000';
-    const trackingUrl = `${origin}/pedido/${order.orderNumber}`;
+    const trackingUrl = `${origin}/acompanhar/${order.trackingToken || order.orderNumber}`;
 
     const waMsg = generateOrderConfirmationWhatsAppMessage({
       orderNumber: order.orderNumber,
@@ -237,18 +242,22 @@ export async function POST(request: Request) {
       notes: order.notes,
     });
 
-    // Dispatch WhatsApp message in the background
+    const whatsappLink = createWhatsAppLink(cleanPhone, waMsg);
+
+    // Dispatch WhatsApp message in the background (non-blocking)
     sendWhatsAppNotification({
       orderId: order.id,
       eventType: 'ORDER_CREATED',
       customerPhone: cleanPhone,
       messageText: waMsg,
-    });
+    }).catch((err) => console.error('[WhatsApp Notification Background Error]:', err));
 
     return NextResponse.json(
       {
         ...order,
+        trackingToken: order.trackingToken,
         trackingUrl,
+        whatsappLink,
       },
       { status: 201 }
     );

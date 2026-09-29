@@ -8,15 +8,22 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawId = (await params).id;
+    const cleanId = rawId ? decodeURIComponent(rawId).trim().replace(/^#/, '') : '';
+
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') {
+      return NextResponse.json({ error: 'Identificador inválido' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { status, courierName, courierPhone, whatsappSent } = body;
 
     const existingOrder = await prisma.order.findFirst({
       where: {
         OR: [
-          { id },
-          { orderNumber: !isNaN(Number(id)) ? Number(id) : -1 },
+          { trackingToken: cleanId },
+          { id: cleanId },
+          { orderNumber: !isNaN(Number(cleanId)) ? Number(cleanId) : -1 },
         ],
       },
       include: { items: true },
@@ -40,7 +47,7 @@ export async function PATCH(
 
     // Se saiu para entrega, gerar o texto e link do WhatsApp
     const origin = request.headers.get('origin') || 'http://localhost:3000';
-    const trackingUrl = `${origin}/rastreio/${updatedOrder.orderNumber}`;
+    const trackingUrl = `${origin}/acompanhar/${updatedOrder.trackingToken || updatedOrder.orderNumber}`;
 
     const whatsappMessage = generateWhatsAppMessage({
       orderNumber: updatedOrder.orderNumber,
@@ -57,6 +64,16 @@ export async function PATCH(
     });
 
     const whatsappLink = createWhatsAppLink(updatedOrder.customerPhone, whatsappMessage);
+
+    // Se mudou para OUT_FOR_DELIVERY, notificar WhatsApp em background
+    if (status === 'OUT_FOR_DELIVERY') {
+      sendWhatsAppNotification({
+        orderId: updatedOrder.id,
+        eventType: 'OUT_FOR_DELIVERY',
+        customerPhone: updatedOrder.customerPhone,
+        messageText: whatsappMessage,
+      }).catch((e) => console.error('[WhatsApp Notification Background Error]:', e));
+    }
 
     return NextResponse.json({
       order: updatedOrder,
