@@ -237,18 +237,21 @@ export async function POST(request: Request) {
       notes: order.notes,
     });
 
-    const whatsappLink = createWhatsAppLink(cleanPhone, waMsg);
+        // Dispatch WhatsApp message in the background
+    sendWhatsAppNotification({
+      orderId: order.id,
+      eventType: 'ORDER_CREATED',
+      customerPhone: cleanPhone,
+      messageText: waMsg,
+    });
 
     return NextResponse.json(
       {
         ...order,
-        whatsappLink,
         trackingUrl,
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Erro ao criar pedido:', error);
     return NextResponse.json({ error: 'Erro ao processar pedido' }, { status: 500 });
   }
 }
