@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateOrderConfirmationWhatsAppMessage, createWhatsAppLink } from '@/lib/whatsapp';
+import { generateOrderConfirmationWhatsAppMessage } from '@/lib/whatsapp';
+import { sendWhatsAppNotification } from '@/lib/notificationService';
 
 // Helper to resolve customer address to real lat/lng near the store
 async function geocodeCustomerAddress(

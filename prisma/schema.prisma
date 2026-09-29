@@ -149,6 +149,7 @@ model Order {
   closedAt     DateTime? // Data/hora do fechamento
   updatedAt    DateTime    @updatedAt
   items        OrderItem[]
+  notifications NotificationEvent[]
 }
 
 model OrderItem {
@@ -166,4 +167,19 @@ model OrderItem {
   vinagrete   Boolean  @default(false)
   complements String? // JSON array of complement names selected
   notes       String?
+}
+
+model NotificationEvent {
+  id                String   @id @default(cuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventType         String   // e.g. "ORDER_CREATED", "OUT_FOR_DELIVERY"
+  channel           String   @default("WHATSAPP")
+  status            String   // "PENDING", "SENT", "FAILED"
+  providerMessageId String?
+  createdAt         DateTime @default(now())
+  sentAt            DateTime?
+  errorLog          String?
+
+  @@unique([orderId, eventType]) // Idempotency key
 }

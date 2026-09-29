@@ -128,7 +128,7 @@ export default function CheckoutModal({ onClose }: void | any) {
       // Disparo automático da confirmação no WhatsApp com o link de rastreio
       if (createdOrder.whatsappLink) {
         try {
-          window.open(createdOrder.whatsappLink, '_blank');
+          // WhatsApp background notification has taken over this action
         } catch (e) {
           console.error(e);
         }

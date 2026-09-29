@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateWhatsAppMessage, createWhatsAppLink } from '@/lib/whatsapp';
+import { sendWhatsAppNotification } from '@/lib/notificationService';
 
 export async function PATCH(
   request: Request,
