@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { Download, FileDown, Smartphone } from 'lucide-react';
+import { Download, FileDown, Smartphone, RefreshCw } from 'lucide-react';
 
 interface QrDisplayProps {
   url: string;
