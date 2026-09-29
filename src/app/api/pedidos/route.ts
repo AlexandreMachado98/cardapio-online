@@ -237,7 +237,7 @@ export async function POST(request: Request) {
       notes: order.notes,
     });
 
-        // Dispatch WhatsApp message in the background
+    // Dispatch WhatsApp message in the background
     sendWhatsAppNotification({
       orderId: order.id,
       eventType: 'ORDER_CREATED',
@@ -252,6 +252,8 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
+  } catch (error) {
+    console.error('Erro ao criar pedido:', error);
     return NextResponse.json({ error: 'Erro ao processar pedido' }, { status: 500 });
   }
 }
