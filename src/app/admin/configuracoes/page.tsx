@@ -28,6 +28,7 @@ import {
   Download,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import QrCodeDisplayPreview from '@/components/admin/QrCodeDisplayPreview';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -392,76 +393,40 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* QR CODE DO CARDÁPIO */}
+        {/* QR CODE DO CARDAPIO */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
-            <QrCode className="w-4 h-4" />
-            QR Code do Cardápio
-          </h3>
-          <p className="text-xs text-zinc-400">
-            Escaneie ou imprima este QR Code para que seus clientes acessem seu cardápio instantaneamente. O link é gerado automaticamente baseado no endereço atual deste site.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center gap-6 mt-4 p-4 bg-zinc-950 rounded-xl border border-zinc-800">
-            <div className="bg-white p-4 rounded-xl shadow-inner flex items-center justify-center">
-              {typeof window !== 'undefined' && (
-                <QRCodeSVG
-                  id="qr-code-svg"
-                  value={window.location.origin}
-                  size={150}
-                  level="H"
-                  includeMargin={false}
-                />
-              )}
-            </div>
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
+              <QrCode className="w-4 h-4" />
+              Display de Mesa e QR Code Profissional
+            </h3>
             
-            <div className="flex flex-col gap-3 w-full sm:w-auto flex-1">
-              <div className="text-xs text-zinc-300 bg-zinc-900 p-3 rounded-lg border border-zinc-800 font-mono break-all">
-                {typeof window !== 'undefined' ? window.location.origin : 'Carregando URL...'}
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const svg = document.getElementById('qr-code-svg');
-                    if (!svg) return;
-                    const svgData = new XMLSerializer().serializeToString(svg);
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    img.onload = () => {
-                      canvas.width = img.width;
-                      canvas.height = img.height;
-                      ctx?.drawImage(img, 0, 0);
-                      const pngFile = canvas.toDataURL('image/png');
-                      const downloadLink = document.createElement('a');
-                      downloadLink.download = 'qrcode-cardapio.png';
-                      downloadLink.href = `${pngFile}`;
-                      downloadLink.click();
-                    };
-                    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
-                  }}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Baixar PNG
-                </button>
-                <button
+            <button
                   type="button"
                   onClick={() => {
                     if (typeof window !== 'undefined') {
                       navigator.clipboard.writeText(window.location.origin);
-                      alert('Link copiado para a área de transferência!');
+                      alert('Link copiado para a area de transferencia!');
                     }
                   }}
-                  className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
+                  className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
-                  Copiar Link
+                  Copiar Link do App
                 </button>
-              </div>
-            </div>
+          </div>
+          <p className="text-xs text-zinc-400">
+            Personalize e baixe a arte do Display de Mesa ou Balcao para seus clientes escanearem o cardapio.
+          </p>
+          
+          <div className="mt-4">
+            {typeof window !== 'undefined' && (
+              <QrCodeDisplayPreview 
+                url={window.location.origin} 
+                storeName={name || 'Cardapio Online'} 
+                storeLogo={logoUrl}
+              />
+            )}
           </div>
         </div>
 
