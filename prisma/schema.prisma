@@ -9,48 +9,48 @@ generator client {
 }
 
 model StoreSettings {
-  id                    String   @id @default("default")
-  name                  String   @default("Cardápio Online")
-  subName               String   @default("")
-  logoUrl               String?
-  bannerUrl             String?
-  announcement          String?  @default("")
-  isOpen                Boolean  @default(true)
-  isMesaEnabled         Boolean  @default(true)
-  isDeliveryEnabled     Boolean  @default(true)
-  
+  id                String  @id @default("default")
+  name              String  @default("Cardápio Online")
+  subName           String  @default("")
+  logoUrl           String?
+  bannerUrl         String?
+  announcement      String? @default("")
+  isOpen            Boolean @default(true)
+  isMesaEnabled     Boolean @default(true)
+  isDeliveryEnabled Boolean @default(true)
+
   // Autenticação do Administrador
-  adminUser             String   @default("admin")
-  adminEmail            String   @default("admin@cardapio.com")
-  adminPassword         String   @default("157864")
-  adminPin              String   @default("157864")
-  
+  adminUser     String @default("admin")
+  adminEmail    String @default("admin@cardapio.com")
+  adminPassword String @default("157864")
+  adminPin      String @default("157864")
+
   // Dados do Entregador / Motoboy Padrão
-  defaultCourierName    String?  @default("Carlos Motoboy")
-  defaultCourierPhone   String?  @default("11999998888")
-  defaultCourierVehicle String?  @default("Moto Honda Fan 160")
-  defaultCourierPlate   String?  @default("")
-  
-  phone                 String   @default("")
-  address               String   @default("")
-  
+  defaultCourierName    String? @default("Carlos Motoboy")
+  defaultCourierPhone   String? @default("11999998888")
+  defaultCourierVehicle String? @default("Moto Honda Fan 160")
+  defaultCourierPlate   String? @default("")
+
+  phone   String @default("")
+  address String @default("")
+
   // Coordenadas Reais do Estabelecimento / Cozinha
-  lat                   Float?
-  lng                   Float?
-  
+  lat Float?
+  lng Float?
+
   // Google Maps API Key
-  googleMapsApiKey      String?  @default("")
-  
-  pixKey                String?  @default("")
-  minOrderValue         Float    @default(0)
-  updatedAt             DateTime @updatedAt
+  googleMapsApiKey String? @default("")
+
+  pixKey        String?  @default("")
+  minOrderValue Float    @default(0)
+  updatedAt     DateTime @updatedAt
 }
 
 model Category {
   id        String    @id @default(cuid())
   name      String
   slug      String    @unique
-  icon      String?   // Emoji or Lucide icon name (Flame, Crown, Sparkles, UtensilsCrossed, Beer, Gift)
+  icon      String? // Emoji or Lucide icon name (Flame, Crown, Sparkles, UtensilsCrossed, Beer, Gift)
   sortOrder Int       @default(0)
   active    Boolean   @default(true)
   products  Product[]
@@ -63,14 +63,14 @@ model Product {
   name          String
   description   String
   price         Float
-  originalPrice Float?      // Preço anterior riscado para promoções/descontos
+  originalPrice Float? // Preço anterior riscado para promoções/descontos
   imageUrl      String
-  badge         String?     // e.g. "Promoção", "Super Oferta", "Mais Pedido", "Chef"
+  badge         String? // e.g. "Promoção", "Super Oferta", "Mais Pedido", "Chef"
   available     Boolean     @default(true)
   categoryId    String
   category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  meatPoints    String?     // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
-  complements   String?     // JSON array: [{"name": "Farofa", "price": 0}, {"name": "Vinagrete", "price": 0}, ...]
+  meatPoints    String? // JSON array of options: ["Ao Ponto", "Bem Passado", "Mal Passado"]
+  complements   String? // JSON array: [{"name": "Farofa", "price": 0}, {"name": "Vinagrete", "price": 0}, ...]
   hasFarofa     Boolean     @default(true)
   hasVinagrete  Boolean     @default(true)
   createdAt     DateTime    @default(now())
@@ -79,73 +79,76 @@ model Product {
 }
 
 model Customer {
-  id        String     @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  phone     String     @unique
+  phone     String    @unique
   email     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   addresses Address[]
   orders    Order[]
 }
 
 model Address {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   customerId   String
-  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   street       String
   number       String
   complement   String?
   neighborhood String
-  city         String    @default("Sua Cidade")
-  state        String    @default("SP")
+  city         String   @default("Sua Cidade")
+  state        String   @default("SP")
   cep          String?
   lat          Float?
   lng          Float?
-  isDefault    Boolean   @default(false)
-  createdAt    DateTime  @default(now())
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
 }
 
 model DeliveryZone {
-  id               String   @id @default(cuid())
-  neighborhood     String   @unique
+  id               String  @id @default(cuid())
+  neighborhood     String  @unique
   fee              Float
-  estimatedMinutes Int      @default(35)
-  active           Boolean  @default(true)
+  estimatedMinutes Int     @default(35)
+  active           Boolean @default(true)
 }
 
 model Order {
-  id             String      @id @default(cuid())
-  orderNumber    Int         @unique
-  customerId     String?
-  customer       Customer?   @relation(fields: [customerId], references: [id])
-  customerName   String
-  customerPhone  String
-  deliveryType   String      @default("DELIVERY") // "DELIVERY" | "PICKUP"
-  addressText    String?     // Formatted full address
-  neighborhood   String?
-  deliveryFee    Float       @default(0)
-  subtotal       Float
-  total          Float
-  paymentMethod  String      // "PIX" | "CARD" | "CASH"
-  changeFor      Float?
-  status         String      @default("PENDING") // "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
-  notes          String?
-  
+  id            String    @id @default(cuid())
+  orderNumber   Int       @unique
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  customerName  String
+  customerPhone String
+  deliveryType  String    @default("DELIVERY") // "DELIVERY" | "PICKUP"
+  addressText   String? // Formatted full address
+  neighborhood  String?
+  deliveryFee   Float     @default(0)
+  subtotal      Float
+  total         Float
+  paymentMethod String // "PIX" | "CARD" | "CASH"
+  changeFor     Float?
+  status        String    @default("PENDING") // "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
+  notes         String?
+  // Mesa / Atendimento
+  tableNumber   String?
+
   // Real-time Courier Tracking & Info
-  courierName    String?     @default("Carlos Motoboy")
-  courierPhone   String?     @default("11999998888")
-  courierVehicle String?     @default("Moto Honda Fan 160")
-  courierPlate   String?     @default("")
+  courierName    String? @default("Carlos Motoboy")
+  courierPhone   String? @default("11999998888")
+  courierVehicle String? @default("Moto Honda Fan 160")
+  courierPlate   String? @default("")
   courierLat     Float?
   courierLng     Float?
   targetLat      Float?
   targetLng      Float?
-  
-  whatsappSent   Boolean     @default(false)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  items          OrderItem[]
+
+  whatsappSent Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  closedAt     DateTime? // Data/hora do fechamento
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
 }
 
 model OrderItem {
@@ -158,9 +161,9 @@ model OrderItem {
   quantity    Int
   unitPrice   Float
   totalPrice  Float
-  meatPoint   String?  // e.g. "Ao ponto"
+  meatPoint   String? // e.g. "Ao ponto"
   farofa      Boolean  @default(false)
   vinagrete   Boolean  @default(false)
-  complements String?  // JSON array of complement names selected
+  complements String? // JSON array of complement names selected
   notes       String?
 }

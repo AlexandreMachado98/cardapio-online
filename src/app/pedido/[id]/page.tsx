@@ -25,6 +25,15 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
+const tableSteps = [
+  { key: 'PENDING', label: 'Recebido', icon: Clock },
+  { key: 'CONFIRMED', label: 'Confirmado', icon: CheckCircle2 },
+  { key: 'PREPARING', label: 'Na Brasa', icon: Flame },
+  { key: 'READY', label: 'Pronto', icon: PackageCheck },
+  { key: 'IN_SERVICE', label: 'Na Mesa', icon: Sparkles },
+  { key: 'CLOSED', label: 'Fechado', icon: CheckCircle2 },
+];
+
 const steps = [
   { key: 'PENDING', label: 'Recebido', icon: Clock },
   { key: 'CONFIRMED', label: 'Confirmado', icon: CheckCircle2 },
@@ -107,10 +116,11 @@ export default function OrderStatusPage() {
 
   const statusInfo = getStatusDetails(order.status);
   const isOutForDelivery = order.status === 'OUT_FOR_DELIVERY';
-  const isDelivered = order.status === 'DELIVERED';
+  const isDelivered = order.status === 'DELIVERED' || order.status === 'CLOSED';
 
   // Find step index
-  const currentStepIndex = steps.findIndex((s) => s.key === order.status);
+  const activeSteps = order.deliveryType === 'TABLE' ? tableSteps : steps;
+  const currentStepIndex = activeSteps.findIndex((s) => s.key === order.status);
 
   // Restaurant WhatsApp contact
   const restaurantWhatsApp = createWhatsAppLink(
@@ -172,7 +182,7 @@ export default function OrderStatusPage() {
         {/* Visual Step Progress Bar */}
         <div className="py-3">
           <div className="grid grid-cols-6 gap-1 relative">
-            {steps.map((step, idx) => {
+            {activeSteps.map((step, idx) => {
               const StepIcon = step.icon;
               const isPast = idx <= currentStepIndex;
               const isCurrent = idx === currentStepIndex;
@@ -335,8 +345,15 @@ export default function OrderStatusPage() {
         {/* Details & Payment sidebar */}
         <div className="space-y-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 space-y-3">
+            {(isDelivered) && (
+              <div className="bg-green-500/10 border border-green-500/20 p-3 rounded-lg mb-3 flex flex-col items-center justify-center text-center space-y-1">
+                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                <span className="font-bold text-green-400 text-xs uppercase">Recibo (Histórico)</span>
+                <span className="text-[10px] text-green-500/70">Este pedido já foi finalizado.</span>
+              </div>
+            )}
             <h4 className="font-bold text-white text-xs uppercase tracking-wider text-orange-400">
-              Resumo dos Valores
+              {isDelivered ? 'Recibo / Faturamento' : 'Resumo dos Valores'}
             </h4>
 
             <div className="space-y-1.5 text-xs text-zinc-400">

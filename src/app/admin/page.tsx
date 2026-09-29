@@ -598,8 +598,9 @@ export default function AdminOrdersPage() {
                 const isPreparing = order.status === 'CONFIRMED' || order.status === 'PREPARING';
                 const isReady = order.status === 'READY';
                 const isOut = order.status === 'OUT_FOR_DELIVERY';
-                const isDelivered = order.status === 'DELIVERED';
+                const isDelivered = order.status === 'DELIVERED' || order.status === 'CLOSED';
                 const isCancelled = order.status === 'CANCELLED';
+                const isInService = order.status === 'IN_SERVICE';
 
                 const elapsedMin = getElapsedMinutes(order.createdAt);
                 const isDelayed = isPending && elapsedMin > 8;
@@ -627,6 +628,10 @@ export default function AdminOrdersPage() {
                   cardBorderClass = 'border-2 border-purple-500/80 shadow-[0_0_20px_rgba(168,85,247,0.2)] bg-gradient-to-b from-purple-950/30 via-zinc-900 to-zinc-900';
                   topBadgeBg = 'bg-purple-500/20 text-purple-400 border border-purple-500/40 font-bold';
                   statusLabel = '🛵 EM ROTA DE ENTREGA';
+                } else if (isInService) {
+                  cardBorderClass = 'border-2 border-indigo-500/80 shadow-[0_0_20px_rgba(99,102,241,0.2)] bg-gradient-to-b from-indigo-950/30 via-zinc-900 to-zinc-900';
+                  topBadgeBg = 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 font-bold';
+                  statusLabel = '🍽️ CONSUMINDO NA MESA';
                 } else if (isDelivered) {
                   cardBorderClass = 'border border-zinc-800/60 opacity-60 bg-zinc-950/60';
                   topBadgeBg = 'bg-zinc-800 text-zinc-400';
@@ -812,12 +817,21 @@ export default function AdminOrdersPage() {
 
                         {isReady && (
                           <button
-                            onClick={() => handleUpdateStatus(order.id, 'OUT_FOR_DELIVERY')}
+                            onClick={() => handleUpdateStatus(order.id, order.deliveryType === 'TABLE' ? 'IN_SERVICE' : 'OUT_FOR_DELIVERY')}
                             disabled={isUpdating}
-                            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black py-3.5 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-cyan-950/60 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                            className={`w-full bg-gradient-to-r ${order.deliveryType === 'TABLE' ? 'from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-950/60' : 'from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-950/60'} text-white font-black py-3.5 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all`}
                           >
-                            <Bike className="w-5 h-5" />
-                            <span>🛵 DESPACHAR C/ MOTOBOY (AVISAR NO WHATSAPP)</span>
+                            {order.deliveryType === 'TABLE' ? (
+                              <>
+                                <Users className="w-5 h-5" />
+                                <span>🍽️ SERVIR NA MESA</span>
+                              </>
+                            ) : (
+                              <>
+                                <Bike className="w-5 h-5" />
+                                <span>🛵 DESPACHAR C/ MOTOBOY</span>
+                              </>
+                            )}
                           </button>
                         )}
 
@@ -841,6 +855,17 @@ export default function AdminOrdersPage() {
                               <span>Painel Motoboy</span>
                             </Link>
                           </div>
+                        )}
+                        
+                        {isInService && (
+                          <button
+                            onClick={() => handleUpdateStatus(order.id, 'CLOSED')}
+                            disabled={isUpdating}
+                            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-zinc-950 font-black py-3.5 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                          >
+                            <CheckCheck className="w-5 h-5 text-zinc-950" />
+                            <span>💲 FECHAR CONTA DA MESA</span>
+                          </button>
                         )}
 
                         {/* Secondary Tools: Print 80mm, WhatsApp & Cancel */}

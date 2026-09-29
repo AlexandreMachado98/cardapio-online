@@ -263,7 +263,7 @@ export default function PerfilPage() {
                         href={`/pedido/${order.orderNumber}`}
                         className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow transition-colors"
                       >
-                        <span>Ver Detalhes / Rastreio</span>
+                        <span>Ver Detalhes / Recibo</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>

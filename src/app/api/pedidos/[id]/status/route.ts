@@ -32,6 +32,7 @@ export async function PATCH(
         courierName: courierName !== undefined ? courierName : existingOrder.courierName,
         courierPhone: courierPhone !== undefined ? courierPhone : existingOrder.courierPhone,
         whatsappSent: whatsappSent !== undefined ? whatsappSent : existingOrder.whatsappSent,
+        closedAt: status === 'CLOSED' ? new Date() : existingOrder.closedAt,
       },
       include: { items: true },
     });

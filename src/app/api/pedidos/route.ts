@@ -159,6 +159,8 @@ export async function POST(request: Request) {
           lng: targetLng,
         },
       });
+    } else if (deliveryType === 'TABLE') {
+      addressFormatted = body.tableNumber ? `Mesa ${body.tableNumber}` : 'Mesa Não Informada';
     }
 
     // 4. Gerar número de pedido único sequencial amigável
@@ -175,8 +177,9 @@ export async function POST(request: Request) {
         customerName,
         customerPhone: cleanPhone,
         deliveryType,
+        tableNumber: body.tableNumber || null,
         addressText: addressFormatted,
-        neighborhood: deliveryType === 'DELIVERY' ? neighborhood : 'Retirada',
+        neighborhood: deliveryType === 'DELIVERY' ? neighborhood : (deliveryType === 'TABLE' ? 'Mesa' : 'Retirada'),
         deliveryFee: Number(deliveryFee) || 0,
         subtotal: Number(subtotal),
         total: Number(total),

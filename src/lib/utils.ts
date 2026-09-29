@@ -88,6 +88,24 @@ export function getStatusDetails(status: string) {
         icon: 'XCircle',
         description: 'Este pedido foi cancelado.',
       };
+    case 'IN_SERVICE':
+      return {
+        label: 'Servido na Mesa',
+        color: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+        badgeColor: 'bg-indigo-500',
+        step: 5,
+        icon: 'Sparkles',
+        description: 'Seu pedido foi entregue na sua mesa. Aproveite!',
+      };
+    case 'CLOSED':
+      return {
+        label: 'Conta Fechada (Recibo)',
+        color: 'bg-green-100 text-green-800 border-green-300',
+        badgeColor: 'bg-green-600',
+        step: 6,
+        icon: 'CheckCircle2',
+        description: 'A conta desta mesa foi fechada. Muito obrigado e volte sempre!',
+      };
     default:
       return {
         label: 'Processando',
