@@ -104,7 +104,7 @@ export interface OrderData {
   customerId?: string | null;
   customerName: string;
   customerPhone: string;
-  deliveryType: 'DELIVERY' | 'PICKUP';
+  deliveryType: 'DELIVERY' | 'PICKUP' | 'TABLE';
   addressText?: string | null;
   neighborhood?: string | null;
   deliveryFee: number;
