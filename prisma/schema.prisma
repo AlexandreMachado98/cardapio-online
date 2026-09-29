@@ -43,6 +43,10 @@ model StoreSettings {
 
   pixKey        String?  @default("")
   minOrderValue Float    @default(0)
+  waApiToken            String?  // Cloud API Token
+  waPhoneNumberId       String?  // Cloud API Phone ID
+  waNotifyCreated       Boolean  @default(false)
+  waNotifyDispatched    Boolean  @default(false)
   updatedAt     DateTime @updatedAt
 }
 
@@ -117,6 +121,7 @@ model DeliveryZone {
 model Order {
   id            String    @id @default(cuid())
   orderNumber   Int       @unique
+  trackingToken String?   @unique
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id])
   customerName  String
